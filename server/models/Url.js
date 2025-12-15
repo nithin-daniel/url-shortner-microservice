@@ -28,18 +28,13 @@ const urlSchema = new mongoose.Schema({
   },
   expiresAt: {
     type: Date,
-    default: () => {
-      const date = new Date();
-      date.setMonth(date.getMonth() + 1);
-      return date;
-    },
+    required: true,
   },
 }, {
   timestamps: true,
 });
 
-// Index for faster queries
-urlSchema.index({ urlCode: 1 });
+// Index for faster queries (urlCode already has unique:true, so no need to index again)
 urlSchema.index({ createdAt: 1 });
 
 module.exports = mongoose.model('Url', urlSchema);

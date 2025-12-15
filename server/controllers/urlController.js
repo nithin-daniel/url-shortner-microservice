@@ -47,12 +47,19 @@ const createShortUrl = async (req, res) => {
       process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
     const shortUrl = `${baseUrl}/${urlCode}`;
 
+    // Set expiry date: use client-provided or default to 1 month from now
+    const expiryDate = expiresAt || (() => {
+      const date = new Date();
+      date.setMonth(date.getMonth() + 1);
+      return date;
+    })();
+
     // Create new URL document
     url = new Url({
       originalUrl,
       shortUrl,
       urlCode,
-      expiresAt: expiresAt || null,
+      expiresAt: expiryDate,
     });
 
     await url.save();
