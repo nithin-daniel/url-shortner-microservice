@@ -1,5 +1,6 @@
 const Url = require('../models/Url');
 const { generateShortCode, isValidUrl } = require('../utils/urlUtils');
+const { successResponse, errorResponse } = require('../utils/responseHandler');
 
 /**
  * Create a shortened URL
@@ -10,17 +11,17 @@ const createShortUrl = async (req, res) => {
 
     // Validate original URL
     if (!originalUrl) {
-      return res.status(400).json({ error: 'Original URL is required' });
+      return errorResponse(res, 400, 'Original URL is required');
     }
 
     if (!isValidUrl(originalUrl)) {
-      return res.status(400).json({ error: 'Invalid URL format' });
+      return errorResponse(res, 400, 'Invalid URL format');
     }
 
     // Check if URL already exists
     let url = await Url.findOne({ originalUrl });
     if (url) {
-      return res.status(200).json(url);
+      return successResponse(res, 200, 'URL already exists', url);
     }
 
     // Generate or use custom short code
@@ -47,10 +48,10 @@ const createShortUrl = async (req, res) => {
 
     await url.save();
 
-    res.status(201).json(url);
+    return successResponse(res, 201, 'Short URL created successfully', url);
   } catch (error) {
     console.error('Error creating short URL:', error);
-    res.status(500).json({ error: 'Server error' });
+    return errorResponse(res, 500, 'Server error', { details: error.message });
   }
 };
 
@@ -60,10 +61,10 @@ const createShortUrl = async (req, res) => {
 const getAllUrls = async (req, res) => {
   try {
     const urls = await Url.find().sort({ createdAt: -1 });
-    res.status(200).json(urls);
+    return successResponse(res, 200, 'URLs retrieved successfully', urls);
   } catch (error) {
     console.error('Error fetching URLs:', error);
-    res.status(500).json({ error: 'Server error' });
+    return errorResponse(res, 500, 'Server error', { details: error.message });
   }
 };
 
@@ -77,12 +78,12 @@ const redirectUrl = async (req, res) => {
     const url = await Url.findOne({ urlCode: code });
 
     if (!url) {
-      return res.status(404).json({ error: 'URL not found' });
+      return errorResponse(res, 404, 'URL not found');
     }
 
     // Check if URL has expired
     if (url.expiresAt && new Date() > url.expiresAt) {
-      return res.status(410).json({ error: 'URL has expired' });
+      return errorResponse(res, 410, 'URL has expired');
     }
 
     // Increment click count
@@ -92,7 +93,7 @@ const redirectUrl = async (req, res) => {
     return res.redirect(url.originalUrl);
   } catch (error) {
     console.error('Error redirecting:', error);
-    res.status(500).json({ error: 'Server error' });
+    return errorResponse(res, 500, 'Server error', { details: error.message });
   }
 };
 
@@ -106,13 +107,13 @@ const getUrlStats = async (req, res) => {
     const url = await Url.findOne({ urlCode: code });
 
     if (!url) {
-      return res.status(404).json({ error: 'URL not found' });
+      return errorResponse(res, 404, 'URL not found');
     }
 
-    res.status(200).json(url);
+    return successResponse(res, 200, 'URL statistics retrieved successfully', url);
   } catch (error) {
     console.error('Error fetching URL stats:', error);
-    res.status(500).json({ error: 'Server error' });
+    return errorResponse(res, 500, 'Server error', { details: error.message });
   }
 };
 
@@ -126,13 +127,13 @@ const deleteUrl = async (req, res) => {
     const url = await Url.findOneAndDelete({ urlCode: code });
 
     if (!url) {
-      return res.status(404).json({ error: 'URL not found' });
+      return errorResponse(res, 404, 'URL not found');
     }
 
-    res.status(200).json({ message: 'URL deleted successfully' });
+    return successResponse(res, 200, 'URL deleted successfully', { deletedUrl: url });
   } catch (error) {
     console.error('Error deleting URL:', error);
-    res.status(500).json({ error: 'Server error' });
+    return errorResponse(res, 500, 'Server error', { details: error.message });
   }
 };
 

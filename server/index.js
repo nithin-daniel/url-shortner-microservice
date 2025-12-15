@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/database');
 const urlRoutes = require('./routes/urlRoutes');
+const { successResponse, errorResponse } = require('./utils/responseHandler');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -17,8 +18,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.get('/', (req, res) => {
-  res.json({ 
-    message: 'Welcome to URL Shortener API',
+  successResponse(res, 200, 'Welcome to URL Shortener API', {
     endpoints: {
       'POST /api/shorten': 'Create a shortened URL',
       'GET /api/urls': 'Get all URLs',
@@ -35,7 +35,7 @@ app.use('/api', urlRoutes);
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+  errorResponse(res, 500, 'Something went wrong!', { details: err.message });
 });
 
 // Start server
