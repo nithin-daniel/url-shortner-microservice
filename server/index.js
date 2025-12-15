@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/database');
 const urlRoutes = require('./routes/urlRoutes');
+const authRoutes = require('./routes/authRoutes');
 const { successResponse, errorResponse } = require('./utils/responseHandler');
 
 const app = express();
@@ -15,11 +16,13 @@ connectDB();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 // Routes
 app.get('/', (req, res) => {
   successResponse(res, 200, 'Welcome to URL Shortener API', {
     endpoints: {
+      'POST /api/auth/register': 'Register a new user',
+      'POST /api/auth/login': 'Login user',
+      'GET /api/auth/profile': 'Get user profile (protected)',
       'POST /api/shorten': 'Create a shortened URL',
       'GET /api/urls': 'Get all URLs',
       'GET /api/stats/:code': 'Get URL statistics',
@@ -30,6 +33,8 @@ app.get('/', (req, res) => {
 });
 
 // API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api', urlRoutes);
 app.use('/api', urlRoutes);
 
 // Error handling middleware
