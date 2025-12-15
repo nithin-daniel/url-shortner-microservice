@@ -28,7 +28,11 @@ const urlSchema = new mongoose.Schema({
   },
   expiresAt: {
     type: Date,
-    default: null,
+    default: () => {
+      const date = new Date();
+      date.setMonth(date.getMonth() + 1);
+      return date;
+    },
   },
 }, {
   timestamps: true,
