@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/database');
+const urlRoutes = require('./routes/urlRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -16,8 +17,20 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to URL Shortener API' });
+  res.json({ 
+    message: 'Welcome to URL Shortener API',
+    endpoints: {
+      'POST /api/shorten': 'Create a shortened URL',
+      'GET /api/urls': 'Get all URLs',
+      'GET /api/stats/:code': 'Get URL statistics',
+      'DELETE /api/urls/:code': 'Delete a URL',
+      'GET /api/:code': 'Redirect to original URL'
+    }
+  });
 });
+
+// API Routes
+app.use('/api', urlRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
