@@ -18,8 +18,8 @@ const createShortUrl = async (req, res) => {
       return errorResponse(res, 400, "Invalid URL format");
     }
 
-    // Check if URL already exists
-    let url = await Url.findOne({ originalUrl });
+    // Check if URL already exists (not deleted)
+    let url = await Url.findOne({ originalUrl, deletedAt: null });
     if (url) {
       return successResponse(res, 200, "URL already exists", url);
     }
@@ -27,18 +27,18 @@ const createShortUrl = async (req, res) => {
     // Generate or use custom short code
     let urlCode = customCode || generateShortCode();
 
-    // Check if custom code already exists
+    // Check if custom code already exists (not deleted)
     if (customCode) {
-      const existingUrl = await Url.findOne({ urlCode: customCode });
+      const existingUrl = await Url.findOne({ urlCode: customCode, deletedAt: null });
       if (existingUrl) {
         return errorResponse(res, 400, "Custom short code already in use");
       }
     } else {
-      // Ensure generated urlCode is unique
-      let existingUrl = await Url.findOne({ urlCode });
+      // Ensure generated urlCode is unique (not deleted)
+      let existingUrl = await Url.findOne({ urlCode, deletedAt: null });
       while (existingUrl) {
         urlCode = generateShortCode();
-        existingUrl = await Url.findOne({ urlCode });
+        existingUrl = await Url.findOne({ urlCode, deletedAt: null });
       }
     }
 
@@ -76,7 +76,7 @@ const createShortUrl = async (req, res) => {
  */
 const getAllUrls = async (req, res) => {
   try {
-    const urls = await Url.find().sort({ createdAt: -1 });
+    const urls = await Url.find({ deletedAt: null }).sort({ createdAt: -1 });
     return successResponse(res, 200, "URLs retrieved successfully", urls);
   } catch (error) {
     console.error("Error fetching URLs:", error);
@@ -139,20 +139,24 @@ const getUrlStats = async (req, res) => {
 };
 
 /**
- * Delete a URL
+ * Delete a URL - Soft delete
  */
 const deleteUrl = async (req, res) => {
   try {
     const { code } = req.params;
 
-    const url = await Url.findOneAndDelete({ urlCode: code });
+    const url = await Url.findOne({ urlCode: code, deletedAt: null });
 
     if (!url) {
       return errorResponse(res, 404, "URL not found");
     }
 
+    // Soft delete by setting deletedAt timestamp
+    url.deletedAt = new Date();
+    await url.save();
+
     return successResponse(res, 200, "URL deleted successfully", {
-      deletedUrl: url,
+      deletedUrl: { urlCode: url.urlCode, originalUrl: url.originalUrl, deletedAt: url.deletedAt },
     });
   } catch (error) {
     console.error("Error deleting URL:", error);

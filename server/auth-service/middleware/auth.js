@@ -20,8 +20,8 @@ const auth = async (req, res, next) => {
     // Verify token
     const decoded = verifyToken(token);
 
-    // Find user
-    const user = await User.findById(decoded.id).select('-password');
+    // Find user (exclude soft-deleted users)
+    const user = await User.findOne({ _id: decoded.id, deletedAt: null }).select('-password');
     
     if (!user) {
       return errorResponse(res, 401, 'User not found, authorization denied');

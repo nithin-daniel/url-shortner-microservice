@@ -18,9 +18,12 @@ const register = async (req, res) => {
       return errorResponse(res, 400, 'Password must be at least 6 characters long');
     }
 
-    // Check if user already exists
+    // Check if user already exists (including soft-deleted)
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      if (existingUser.deletedAt) {
+        return errorResponse(res, 400, 'This email was previously used. Please contact support.');
+      }
       return errorResponse(res, 400, 'User with this email already exists');
     }
 
@@ -64,7 +67,7 @@ const login = async (req, res) => {
     }
 
     // Find user by email
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email, deletedAt: null });
     if (!user) {
       return errorResponse(res, 401, 'Invalid email or password');
     }
@@ -98,7 +101,7 @@ const login = async (req, res) => {
  */
 const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    const user = await User.findOne({ _id: req.user.id, deletedAt: null }).select('-password');
     
     if (!user) {
       return errorResponse(res, 404, 'User not found');
@@ -116,7 +119,7 @@ const getProfile = async (req, res) => {
  */
 const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    const users = await User.find({ deletedAt: null }).select('-password').sort({ createdAt: -1 });
     return successResponse(res, 200, 'Users retrieved successfully', { users, count: users.length });
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -136,7 +139,7 @@ const updateUserRole = async (req, res) => {
       return errorResponse(res, 400, 'Invalid role. Must be either "user" or "admin"');
     }
 
-    const user = await User.findById(userId).select('-password');
+    const user = await User.findOne({ _id: userId, deletedAt: null }).select('-password');
     
     if (!user) {
       return errorResponse(res, 404, 'User not found');
@@ -153,7 +156,7 @@ const updateUserRole = async (req, res) => {
 };
 
 /**
- * Delete user (admin only)
+ * Delete user (admin only) - Soft delete
  */
 const deleteUser = async (req, res) => {
   try {
@@ -164,14 +167,18 @@ const deleteUser = async (req, res) => {
       return errorResponse(res, 400, 'You cannot delete your own account');
     }
 
-    const user = await User.findByIdAndDelete(userId);
+    const user = await User.findOne({ _id: userId, deletedAt: null });
     
     if (!user) {
       return errorResponse(res, 404, 'User not found');
     }
 
+    // Soft delete by setting deletedAt timestamp
+    user.deletedAt = new Date();
+    await user.save();
+
     return successResponse(res, 200, 'User deleted successfully', { 
-      deletedUser: { id: user._id, email: user.email, name: user.name }
+      deletedUser: { id: user._id, email: user.email, name: user.name, deletedAt: user.deletedAt }
     });
   } catch (error) {
     console.error('Error deleting user:', error);
