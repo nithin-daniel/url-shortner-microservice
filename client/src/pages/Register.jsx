@@ -34,7 +34,7 @@ const Register = () => {
 
     try {
       const { confirmPassword, ...registrationData } = formData;
-      const response = await api.post('/auth/register', registrationData);
+      const response = await api.post('/api/auth/register', registrationData);
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
       navigate('/dashboard');

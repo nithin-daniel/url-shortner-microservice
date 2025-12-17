@@ -22,7 +22,7 @@ const Dashboard = () => {
 
   const fetchUrls = async () => {
     try {
-      const response = await api.get('/url/urls');
+      const response = await api.get('/api/urls');
       setUrls(response.data.urls || []);
     } catch (err) {
       console.error('Error fetching URLs:', err);
@@ -35,7 +35,7 @@ const Dashboard = () => {
     setError('');
 
     try {
-      const response = await api.post('/url/shorten', { originalUrl });
+      const response = await api.post('/api/shorten', { originalUrl });
       setUrls([response.data.url, ...urls]);
       setOriginalUrl('');
     } catch (err) {
@@ -57,7 +57,7 @@ const Dashboard = () => {
 
   const handleDelete = async (urlId) => {
     try {
-      await api.delete(`/url/${urlId}`);
+      await api.delete(`/api/${urlId}`);
       setUrls(urls.filter(url => url._id !== urlId));
     } catch (err) {
       console.error('Error deleting URL:', err);
