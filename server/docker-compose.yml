@@ -1,6 +1,27 @@
 version: '3.8'
 
 services:
+  # Nginx API Gateway
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-gateway
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - auth-service
+      - url-service
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # MongoDB Database
   mongodb:
     image: mongo:7.0
@@ -43,8 +64,8 @@ services:
       dockerfile: Dockerfile
     container_name: auth-service
     restart: unless-stopped
-    ports:
-      - "5001:5001"
+    expose:
+      - "5001"
     environment:
       PORT: 5001
       MONGODB_URI: mongodb://mongodb:27017/auth-service
@@ -67,14 +88,14 @@ services:
       dockerfile: Dockerfile
     container_name: url-service
     restart: unless-stopped
-    ports:
-      - "5002:5002"
+    expose:
+      - "5002"
     environment:
       PORT: 5002
       MONGODB_URI: mongodb://mongodb:27017/url-service
       JWT_SECRET: your_super_secret_jwt_key_change_in_production
       RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672
-      BASE_URL: http://localhost:5002/api
+      BASE_URL: http://localhost/api
       DEFAULT_EXPIRY_DAYS: 30
     depends_on:
       - mongodb
@@ -92,3 +113,4 @@ networks:
 volumes:
   mongodb_data:
   rabbitmq_data:
+  nginx_logs:
