@@ -41,6 +41,7 @@ const register = async (req, res) => {
         id: user._id,
         email: user.email,
         name: user.name,
+        role: user.role,
       },
       token,
     });
@@ -82,6 +83,7 @@ const login = async (req, res) => {
         id: user._id,
         email: user.email,
         name: user.name,
+        role: user.role,
       },
       token,
     });
@@ -109,8 +111,79 @@ const getProfile = async (req, res) => {
   }
 };
 
+/**
+ * Get all users (admin only)
+ */
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    return successResponse(res, 200, 'Users retrieved successfully', { users, count: users.length });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    return errorResponse(res, 500, 'Server error', { details: error.message });
+  }
+};
+
+/**
+ * Update user role (admin only)
+ */
+const updateUserRole = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { role } = req.body;
+
+    if (!role || !['user', 'admin'].includes(role)) {
+      return errorResponse(res, 400, 'Invalid role. Must be either "user" or "admin"');
+    }
+
+    const user = await User.findById(userId).select('-password');
+    
+    if (!user) {
+      return errorResponse(res, 404, 'User not found');
+    }
+
+    user.role = role;
+    await user.save();
+
+    return successResponse(res, 200, 'User role updated successfully', { user });
+  } catch (error) {
+    console.error('Error updating user role:', error);
+    return errorResponse(res, 500, 'Server error', { details: error.message });
+  }
+};
+
+/**
+ * Delete user (admin only)
+ */
+const deleteUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Prevent admin from deleting themselves
+    if (userId === req.user.id) {
+      return errorResponse(res, 400, 'You cannot delete your own account');
+    }
+
+    const user = await User.findByIdAndDelete(userId);
+    
+    if (!user) {
+      return errorResponse(res, 404, 'User not found');
+    }
+
+    return successResponse(res, 200, 'User deleted successfully', { 
+      deletedUser: { id: user._id, email: user.email, name: user.name }
+    });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    return errorResponse(res, 500, 'Server error', { details: error.message });
+  }
+};
+
 module.exports = {
   register,
   login,
   getProfile,
+  getAllUsers,
+  updateUserRole,
+  deleteUser,
 };
