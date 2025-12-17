@@ -14,6 +14,7 @@ services:
     depends_on:
       - auth-service
       - url-service
+      - auth-validator
     networks:
       - microservices-network
     healthcheck:
@@ -21,6 +22,24 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  # Auth Validator Service
+  auth-validator:
+    build:
+      context: ./auth-validator
+      dockerfile: Dockerfile
+    container_name: auth-validator
+    restart: unless-stopped
+    expose:
+      - "9000"
+    environment:
+      PORT: 9000
+      JWT_SECRET: your_super_secret_jwt_key_change_in_production
+    networks:
+      - microservices-network
+    volumes:
+      - ./auth-validator:/app
+      - /app/node_modules
 
   # MongoDB Database
   mongodb:
