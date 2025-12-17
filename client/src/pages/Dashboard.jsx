@@ -72,7 +72,7 @@ const Dashboard = () => {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">URL Shortener</h1>
-              <p className="text-sm text-gray-600">Welcome, {user?.username || 'User'}</p>
+              <p className="text-sm text-gray-600">Welcome, {user?.name || 'User'}</p>
             </div>
             <button
               onClick={handleLogout}

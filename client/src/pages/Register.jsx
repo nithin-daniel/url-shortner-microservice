@@ -4,7 +4,7 @@ import api from '../utils/api';
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    username: '',
+    name: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -64,18 +64,18 @@ const Register = () => {
             )}
 
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-                Username
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                Name
               </label>
               <input
-                id="username"
-                name="username"
+                id="name"
+                name="name"
                 type="text"
                 required
-                value={formData.username}
+                value={formData.name}
                 onChange={handleChange}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200"
-                placeholder="johndoe"
+                placeholder="John Doe"
               />
             </div>
 
