@@ -1,0 +1,225 @@
+const User = require('../models/User');
+const { generateToken } = require('../utils/jwtUtils');
+const { successResponse, errorResponse } = require('../utils/responseHandler');
+const { publishEvent } = require('../config/rabbitmq');
+
+/**
+ * Register a new user
+ */
+const register = async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
+
+    // Validate input
+    if (!email || !password) {
+      return errorResponse(res, 400, 'Email and password are required');
+    }
+
+    if (password.length < 6) {
+      return errorResponse(res, 400, 'Password must be at least 6 characters long');
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return errorResponse(res, 400, 'User with this email already exists');
+    }
+
+    // Create new user
+    const user = new User({
+      email,
+      password,
+      name,
+    });
+
+    await user.save();
+
+    // Generate token
+    const token = generateToken(user._id);
+
+    // Publish user registration event to RabbitMQ
+    await publishEvent('user_events', 'user.registered', {
+      userId: user._id.toString(),
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      timestamp: new Date().toISOString(),
+    });
+
+    return successResponse(res, 201, 'User registered successfully', {
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+      token,
+    });
+  } catch (error) {
+    console.error('Error registering user:', error);
+    return errorResponse(res, 500, 'Server error', { details: error.message });
+  }
+};
+
+/**
+ * Login user
+ */
+const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Validate input
+    if (!email || !password) {
+      return errorResponse(res, 400, 'Email and password are required');
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return errorResponse(res, 401, 'Invalid email or password');
+    }
+
+    // Compare passwords
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return errorResponse(res, 401, 'Invalid email or password');
+    }
+
+    // Generate token
+    const token = generateToken(user._id);
+
+    // Publish user login event
+    await publishEvent('user_events', 'user.logged_in', {
+      userId: user._id.toString(),
+      email: user.email,
+      timestamp: new Date().toISOString(),
+    });
+
+    return successResponse(res, 200, 'Login successful', {
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+      token,
+    });
+  } catch (error) {
+    console.error('Error logging in:', error);
+    return errorResponse(res, 500, 'Server error', { details: error.message });
+  }
+};
+
+/**
+ * Get current user profile
+ */
+const getProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    
+    if (!user) {
+      return errorResponse(res, 404, 'User not found');
+    }
+
+    return successResponse(res, 200, 'Profile retrieved successfully', { user });
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    return errorResponse(res, 500, 'Server error', { details: error.message });
+  }
+};
+
+/**
+ * Get all users (admin only)
+ */
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    return successResponse(res, 200, 'Users retrieved successfully', { users, count: users.length });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    return errorResponse(res, 500, 'Server error', { details: error.message });
+  }
+};
+
+/**
+ * Update user role (admin only)
+ */
+const updateUserRole = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { role } = req.body;
+
+    if (!role || !['user', 'admin'].includes(role)) {
+      return errorResponse(res, 400, 'Invalid role. Must be either "user" or "admin"');
+    }
+
+    const user = await User.findById(userId).select('-password');
+    
+    if (!user) {
+      return errorResponse(res, 404, 'User not found');
+    }
+
+    const oldRole = user.role;
+    user.role = role;
+    await user.save();
+
+    // Publish role update event
+    await publishEvent('user_events', 'user.role_updated', {
+      userId: user._id.toString(),
+      email: user.email,
+      oldRole,
+      newRole: role,
+      updatedBy: req.user.id,
+      timestamp: new Date().toISOString(),
+    });
+
+    return successResponse(res, 200, 'User role updated successfully', { user });
+  } catch (error) {
+    console.error('Error updating user role:', error);
+    return errorResponse(res, 500, 'Server error', { details: error.message });
+  }
+};
+
+/**
+ * Delete user (admin only)
+ */
+const deleteUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Prevent admin from deleting themselves
+    if (userId === req.user.id) {
+      return errorResponse(res, 400, 'You cannot delete your own account');
+    }
+
+    const user = await User.findByIdAndDelete(userId);
+    
+    if (!user) {
+      return errorResponse(res, 404, 'User not found');
+    }
+
+    // Publish user deletion event
+    await publishEvent('user_events', 'user.deleted', {
+      userId: user._id.toString(),
+      email: user.email,
+      deletedBy: req.user.id,
+      timestamp: new Date().toISOString(),
+    });
+
+    return successResponse(res, 200, 'User deleted successfully', { 
+      deletedUser: { id: user._id, email: user.email, name: user.name }
+    });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    return errorResponse(res, 500, 'Server error', { details: error.message });
+  }
+};
+
+module.exports = {
+  register,
+  login,
+  getProfile,
+  getAllUsers,
+  updateUserRole,
+  deleteUser,
+};

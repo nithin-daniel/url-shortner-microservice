@@ -1,42 +1,94 @@
 version: '3.8'
 
 services:
+  # MongoDB Database
   mongodb:
-    image: mongo:7
-    container_name: url_shortener_db
+    image: mongo:7.0
+    container_name: mongodb
     restart: unless-stopped
     ports:
       - "27017:27017"
-    environment:
-      MONGO_INITDB_DATABASE: url_shortener
     volumes:
       - mongodb_data:/data/db
     networks:
-      - app-network
+      - microservices-network
+    environment:
+      MONGO_INITDB_DATABASE: url_shortener
 
-  app:
-    build: .
-    container_name: url_shortener_app
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: rabbitmq
     restart: unless-stopped
     ports:
-      - "5000:5000"
+      - "5672:5672"    # AMQP port
+      - "15672:15672"  # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - microservices-network
     environment:
-      - NODE_ENV=development
-      - PORT=5000
-      - MONGODB_URI=mongodb://mongodb:27017/url_shortener
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Authentication Service
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      PORT: 5001
+      MONGODB_URI: mongodb://mongodb:27017/auth-service
+      JWT_SECRET: your_super_secret_jwt_key_change_in_production
+      JWT_EXPIRES_IN: 7d
+      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672
     depends_on:
       - mongodb
-    volumes:
-      - .:/app
-      - /app/node_modules
+      - rabbitmq
     networks:
-      - app-network
-    command: npm run dev
+      - microservices-network
+    volumes:
+      - ./auth-service:/app
+      - /app/node_modules
+
+  # URL Shortener Service
+  url-service:
+    build:
+      context: ./url-service
+      dockerfile: Dockerfile
+    container_name: url-service
+    restart: unless-stopped
+    ports:
+      - "5002:5002"
+    environment:
+      PORT: 5002
+      MONGODB_URI: mongodb://mongodb:27017/url-service
+      JWT_SECRET: your_super_secret_jwt_key_change_in_production
+      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672
+      BASE_URL: http://localhost:5002/api
+      DEFAULT_EXPIRY_DAYS: 30
+    depends_on:
+      - mongodb
+      - rabbitmq
+    networks:
+      - microservices-network
+    volumes:
+      - ./url-service:/app
+      - /app/node_modules
+
+networks:
+  microservices-network:
+    driver: bridge
 
 volumes:
   mongodb_data:
-    driver: local
-
-networks:
-  app-network:
-    driver: bridge
+  rabbitmq_data:

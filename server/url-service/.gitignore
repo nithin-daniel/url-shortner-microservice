@@ -1,0 +1,30 @@
+node_modules/
+npm-debug.log
+yarn-error.log
+.env
+.env.local
+.DS_Store
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage
+coverage
+
+# Build
+dist/
+build/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db

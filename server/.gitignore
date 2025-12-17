@@ -3,6 +3,17 @@ node_modules/
 
 # Environment variables
 .env
+.env.local
+
+# Auth Service
+auth-service/node_modules/
+auth-service/.env
+auth-service/npm-debug.log
+
+# URL Service
+url-service/node_modules/
+url-service/.env
+url-service/npm-debug.log
 
 # Logs
 logs
