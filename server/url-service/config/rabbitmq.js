@@ -1,4 +1,5 @@
 const amqp = require('amqplib');
+const logger = require('../utils/logger');
 
 let channel = null;
 
@@ -10,21 +11,21 @@ const connectRabbitMQ = async () => {
     // Assert exchanges for future use
     await channel.assertExchange('url_events', 'topic', { durable: true });
     
-    console.log('RabbitMQ Connected');
+    logger.info('RabbitMQ Connected');
     
     connection.on('error', (err) => {
-      console.error('RabbitMQ connection error:', err);
+      logger.error(`RabbitMQ connection error: ${err.message}`);
     });
     
     connection.on('close', () => {
-      console.log('RabbitMQ connection closed. Reconnecting...');
+      logger.warn('RabbitMQ connection closed. Reconnecting...');
       setTimeout(connectRabbitMQ, 5000);
     });
     
     return channel;
   } catch (error) {
-    console.error('Failed to connect to RabbitMQ:', error.message);
-    console.log('Retrying in 5 seconds...');
+    logger.error(`Failed to connect to RabbitMQ: ${error.message}`);
+    logger.info('Retrying in 5 seconds...');
     setTimeout(connectRabbitMQ, 5000);
   }
 };
@@ -32,7 +33,7 @@ const connectRabbitMQ = async () => {
 const publishEvent = async (exchange, routingKey, message) => {
   try {
     if (!channel) {
-      console.error('RabbitMQ channel not initialized');
+      logger.error('RabbitMQ channel not initialized');
       return false;
     }
     
@@ -43,10 +44,10 @@ const publishEvent = async (exchange, routingKey, message) => {
       { persistent: true }
     );
     
-    console.log(`Event published to ${exchange} with routing key ${routingKey}`);
+    logger.info(`Event published to ${exchange} with routing key ${routingKey}`);
     return true;
   } catch (error) {
-    console.error('Error publishing event:', error);
+    logger.error(`Error publishing event: ${error.message}`);
     return false;
   }
 };

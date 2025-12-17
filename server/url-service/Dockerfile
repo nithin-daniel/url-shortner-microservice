@@ -13,6 +13,9 @@ RUN npm install --omit=dev
 # Copy application files
 COPY . .
 
+# Create logs directory
+RUN mkdir -p logs
+
 # Expose port
 EXPOSE 5002
 

@@ -72,6 +72,7 @@ services:
       JWT_SECRET: your_super_secret_jwt_key_change_in_production
       JWT_EXPIRES_IN: 7d
       RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672
+      LOG_LEVEL: http
     depends_on:
       - mongodb
       - rabbitmq
@@ -80,6 +81,7 @@ services:
     volumes:
       - ./auth-service:/app
       - /app/node_modules
+      - auth_logs:/app/logs
 
   # URL Shortener Service
   url-service:
@@ -97,6 +99,7 @@ services:
       RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672
       BASE_URL: http://localhost/api
       DEFAULT_EXPIRY_DAYS: 30
+      LOG_LEVEL: info
     depends_on:
       - mongodb
       - rabbitmq
@@ -105,6 +108,7 @@ services:
     volumes:
       - ./url-service:/app
       - /app/node_modules
+      - url_logs:/app/logs
 
 networks:
   microservices-network:
@@ -114,3 +118,5 @@ volumes:
   mongodb_data:
   rabbitmq_data:
   nginx_logs:
+  auth_logs:
+  url_logs:

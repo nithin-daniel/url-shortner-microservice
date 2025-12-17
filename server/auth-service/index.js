@@ -5,6 +5,8 @@ const connectDB = require('./config/database');
 const { connectRabbitMQ } = require('./config/rabbitmq');
 const authRoutes = require('./routes/authRoutes');
 const { successResponse, errorResponse } = require('./utils/responseHandler');
+const logger = require('./utils/logger');
+const requestLogger = require('./middleware/requestLogger');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -19,6 +21,7 @@ connectRabbitMQ();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(requestLogger);
 
 // Routes
 app.get('/', (req, res) => {
@@ -46,13 +49,13 @@ app.use((req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  logger.error(`Error: ${err.message}\nStack: ${err.stack}`);
   errorResponse(res, 500, 'Something went wrong!', { details: err.message });
 });
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Auth Service is running on port ${PORT}`);
+  logger.info(`Auth Service is running on port ${PORT}`);
 });
 
 module.exports = app;

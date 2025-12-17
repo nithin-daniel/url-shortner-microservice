@@ -5,6 +5,7 @@ yarn-error.log
 .env.local
 .DS_Store
 *.log
+logs/
 
 # Runtime data
 pids
