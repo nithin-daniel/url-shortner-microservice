@@ -1,16 +1,104 @@
-# React + Vite
+# URL Shortener - Client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, minimal React application for the URL Shortener microservice built with Vite, React, and Tailwind CSS.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 🔐 **Authentication**: Login and Register pages with JWT authentication
+- 🎨 **Modern UI**: Clean, minimal design using Tailwind CSS
+- 📱 **Responsive**: Works seamlessly on desktop and mobile devices
+- 🔗 **URL Management**: Create, view, and delete shortened URLs
+- 📊 **Analytics**: Track click counts for each URL
+- 🎯 **Protected Routes**: Dashboard accessible only to authenticated users
 
-## React Compiler
+## Pages
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Home (`/`)
+- Landing page with hero section
+- Feature highlights
+- Call-to-action buttons
 
-## Expanding the ESLint configuration
+### Login (`/login`)
+- Email and password authentication
+- Gradient background with modern form design
+- Link to registration page
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Register (`/register`)
+- User registration with username, email, and password
+- Password confirmation validation
+- Link to login page
+
+### Dashboard (`/dashboard`)
+- Protected route (requires authentication)
+- URL shortening form
+- List of user's shortened URLs
+- Click tracking
+- Copy to clipboard functionality
+- Delete URLs
+
+## Tech Stack
+
+- **React 19**: Modern React with hooks
+- **Vite**: Fast build tool and dev server
+- **React Router DOM**: Client-side routing
+- **Tailwind CSS**: Utility-first CSS framework
+- **Axios**: HTTP client for API requests
+
+## Setup
+
+1. Install dependencies:
+```bash
+npm install
+```
+
+2. Configure environment variables:
+```bash
+cp .env.example .env
+```
+Edit `.env` and set `VITE_API_BASE_URL` to your backend URL (default: http://localhost)
+
+3. Start development server:
+```bash
+npm run dev
+```
+
+4. Build for production:
+```bash
+npm run build
+```
+
+## Project Structure
+
+```
+client/
+├── src/
+│   ├── pages/
+│   │   ├── Home.jsx          # Landing page
+│   │   ├── Login.jsx         # Login page
+│   │   ├── Register.jsx      # Registration page
+│   │   └── Dashboard.jsx     # Main dashboard
+│   ├── components/           # Reusable components (empty for now)
+│   ├── utils/
+│   │   └── api.js           # Axios configuration
+│   ├── App.jsx              # Main app with routing
+│   ├── main.jsx             # Entry point
+│   └── index.css            # Tailwind imports
+├── public/                  # Static assets
+└── package.json
+```
+
+## API Integration
+
+The app integrates with the backend microservices:
+
+- **Auth Service**: `/auth/login`, `/auth/register`
+- **URL Service**: `/url/shorten`, `/url/urls`, `/url/:id`
+
+API calls are made using Axios with automatic JWT token injection from localStorage.
+
+## Design Philosophy
+
+- **Minimal**: Clean, uncluttered interface
+- **Modern**: Contemporary gradients and shadows
+- **Accessible**: Clear labels and focus states
+- **Responsive**: Mobile-first approach with Tailwind breakpoints
