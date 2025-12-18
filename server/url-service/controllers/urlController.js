@@ -83,14 +83,38 @@ const createShortUrl = async (req, res) => {
 };
 
 /**
- * Get all URLs
+ * Get all URLs (Admin only)
+ * Query params: status=active|expired|deleted
  */
 const getAllUrls = async (req, res) => {
   try {
-    const urls = await Url.find({ deletedAt: null }).sort({ createdAt: -1 });
+    const { status } = req.query;
+    let query = {};
+    let urls;
+
+    if (status === 'deleted') {
+      // Get soft deleted URLs
+      query.deletedAt = { $ne: null };
+      urls = await Url.find(query).sort({ deletedAt: -1 });
+    } else if (status === 'expired') {
+      // Get expired URLs (not deleted)
+      query.deletedAt = null;
+      query.expiresAt = { $lt: new Date() };
+      urls = await Url.find(query).sort({ expiresAt: -1 });
+    } else {
+      // Get active URLs (not deleted, not expired)
+      query.deletedAt = null;
+      query.$or = [
+        { expiresAt: { $gte: new Date() } },
+        { expiresAt: null }
+      ];
+      urls = await Url.find(query).sort({ createdAt: -1 });
+    }
+
     return successResponse(res, 200, "URLs retrieved successfully", {
       urls,
-      count: urls.length
+      count: urls.length,
+      status: status || 'active'
     });
   } catch (error) {
     console.error("Error fetching URLs:", error);
@@ -216,6 +240,43 @@ const deleteUrl = async (req, res) => {
   }
 };
 
+/**
+ * Get admin dashboard statistics
+ */
+const getAdminStats = async (req, res) => {
+  try {
+    const totalUrls = await Url.countDocuments({ deletedAt: null });
+    const deletedUrls = await Url.countDocuments({ deletedAt: { $ne: null } });
+    const expiredUrls = await Url.countDocuments({
+      deletedAt: null,
+      expiresAt: { $lt: new Date() }
+    });
+    const activeUrls = await Url.countDocuments({
+      deletedAt: null,
+      $or: [
+        { expiresAt: { $gte: new Date() } },
+        { expiresAt: null }
+      ]
+    });
+    
+    const totalClicks = await Url.aggregate([
+      { $match: { deletedAt: null } },
+      { $group: { _id: null, total: { $sum: '$clicks' } } }
+    ]);
+
+    return successResponse(res, 200, "Statistics retrieved successfully", {
+      totalUrls,
+      activeUrls,
+      expiredUrls,
+      deletedUrls,
+      totalClicks: totalClicks[0]?.total || 0
+    });
+  } catch (error) {
+    console.error("Error fetching admin stats:", error);
+    return errorResponse(res, 500, "Server error", { details: error.message });
+  }
+};
+
 module.exports = {
   createShortUrl,
   getAllUrls,
@@ -223,4 +284,5 @@ module.exports = {
   redirectUrl,
   getUrlStats,
   deleteUrl,
+  getAdminStats,
 };

@@ -108,12 +108,22 @@ const Dashboard = () => {
               <h1 className="text-2xl font-bold text-gray-900">URL Shortener</h1>
               <p className="text-sm text-gray-600">Welcome, {user?.name || 'User'}</p>
             </div>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-200"
-            >
-              Logout
-            </button>
+            <div className="flex gap-3">
+              {user?.role === 'admin' && (
+                <button
+                  onClick={() => navigate('/admin')}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition duration-200"
+                >
+                  Admin Panel
+                </button>
+              )}
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-200"
+              >
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </header>

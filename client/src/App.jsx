@@ -3,14 +3,30 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
 
 function App() {
   const isAuthenticated = () => {
     return localStorage.getItem('token') !== null;
   };
 
+  const isAdmin = () => {
+    const user = localStorage.getItem('user');
+    if (!user || user === 'undefined') return false;
+    try {
+      const parsedUser = JSON.parse(user);
+      return parsedUser.role === 'admin';
+    } catch {
+      return false;
+    }
+  };
+
   const ProtectedRoute = ({ children }) => {
     return isAuthenticated() ? children : <Navigate to="/login" />;
+  };
+
+  const AdminRoute = ({ children }) => {
+    return isAuthenticated() && isAdmin() ? children : <Navigate to="/dashboard" />;
   };
 
   return (
@@ -25,6 +41,14 @@ function App() {
             <ProtectedRoute>
               <Dashboard />
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
           }
         />
       </Routes>

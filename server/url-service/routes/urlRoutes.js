@@ -7,6 +7,7 @@ const {
   redirectUrl,
   getUrlStats,
   deleteUrl,
+  getAdminStats,
 } = require('../controllers/urlController');
 const { auth, authorize } = require('../middleware/auth');
 
@@ -16,7 +17,10 @@ router.post('/shorten', auth, createShortUrl);
 // Get user's own URLs (authenticated users)
 router.get('/urls/my', auth, getUserUrls);
 
-// Get all URLs (admin only)
+// Get admin statistics (admin only)
+router.get('/admin/stats', auth, authorize('admin'), getAdminStats);
+
+// Get all URLs (admin only) - supports ?status=active|expired|deleted
 router.get('/urls', auth, authorize('admin'), getAllUrls);
 
 // Get URL statistics by code (authenticated users)
