@@ -4,6 +4,8 @@ import api from '../utils/api';
 
 const Dashboard = () => {
   const [originalUrl, setOriginalUrl] = useState('');
+  const [customCode, setCustomCode] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
   const [urls, setUrls] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -48,9 +50,19 @@ const Dashboard = () => {
     setError('');
 
     try {
-      const response = await api.post('/api/shorten', { originalUrl });
+      const payload = { originalUrl };
+      if (customCode.trim()) {
+        payload.customCode = customCode.trim();
+      }
+      if (expiryDate) {
+        payload.expiresAt = new Date(expiryDate).toISOString();
+      }
+      
+      const response = await api.post('/api/shorten', payload);
       setUrls([response.data, ...urls]);
       setOriginalUrl('');
+      setCustomCode('');
+      setExpiryDate('');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to shorten URL');
     } finally {
@@ -117,23 +129,67 @@ const Dashboard = () => {
                 {error}
               </div>
             )}
-            <div className="flex gap-4">
+            
+            {/* URL Input */}
+            <div>
+              <label htmlFor="originalUrl" className="block text-sm font-medium text-gray-700 mb-2">
+                Long URL <span className="text-red-500">*</span>
+              </label>
               <input
+                id="originalUrl"
                 type="url"
                 value={originalUrl}
                 onChange={(e) => setOriginalUrl(e.target.value)}
-                placeholder="Enter your long URL here..."
+                placeholder="https://example.com/very/long/url"
                 required
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
               />
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Shortening...' : 'Shorten'}
-              </button>
             </div>
+
+            {/* Custom Code (Optional) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="customCode" className="block text-sm font-medium text-gray-700 mb-2">
+                  Custom Short Code <span className="text-gray-500 text-xs">(Optional)</span>
+                </label>
+                <input
+                  id="customCode"
+                  type="text"
+                  value={customCode}
+                  onChange={(e) => setCustomCode(e.target.value)}
+                  placeholder="my-custom-link"
+                  pattern="[a-zA-Z0-9_-]*"
+                  title="Only letters, numbers, hyphens, and underscores allowed"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                />
+                <p className="text-xs text-gray-500 mt-1">Leave empty for auto-generated code</p>
+              </div>
+
+              {/* Expiry Date (Optional) */}
+              <div>
+                <label htmlFor="expiryDate" className="block text-sm font-medium text-gray-700 mb-2">
+                  Expiry Date <span className="text-gray-500 text-xs">(Optional)</span>
+                </label>
+                <input
+                  id="expiryDate"
+                  type="datetime-local"
+                  value={expiryDate}
+                  onChange={(e) => setExpiryDate(e.target.value)}
+                  min={new Date().toISOString().slice(0, 16)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                />
+                <p className="text-xs text-gray-500 mt-1">Default: 30 days from now</p>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Shortening...' : 'Shorten URL'}
+            </button>
           </form>
         </div>
 
@@ -199,6 +255,11 @@ const Dashboard = () => {
                       <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
                         <span>Clicks: {url.clicks || 0}</span>
                         <span>Created: {new Date(url.createdAt).toLocaleDateString()}</span>
+                        {url.expiresAt && (
+                          <span className={`font-medium ${new Date(url.expiresAt) < new Date() ? 'text-red-600' : 'text-orange-600'}`}>
+                            {new Date(url.expiresAt) < new Date() ? 'Expired' : `Expires: ${new Date(url.expiresAt).toLocaleDateString()}`}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <button
