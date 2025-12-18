@@ -188,6 +188,11 @@ const deleteUrl = async (req, res) => {
       return errorResponse(res, 404, "URL not found");
     }
 
+    // Check if user is the owner or an admin
+    if (url.userId.toString() !== req.user.id && req.user.role !== 'admin') {
+      return errorResponse(res, 403, "You don't have permission to delete this URL");
+    }
+
     // Soft delete by setting deletedAt timestamp
     url.deletedAt = new Date();
     await url.save();
@@ -197,6 +202,7 @@ const deleteUrl = async (req, res) => {
       urlCode: url.urlCode,
       originalUrl: url.originalUrl,
       clicks: url.clicks,
+      deletedBy: req.user.id,
       deletedAt: url.deletedAt.toISOString(),
       timestamp: new Date().toISOString(),
     });

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 
@@ -9,6 +9,21 @@ const Dashboard = () => {
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
+
+  const fetchUrls = useCallback(async () => {
+    try {
+      const response = await api.get('/api/urls/my');
+      setUrls(response.data.urls || []);
+    } catch (err) {
+      console.error('Error fetching URLs:', err);
+      if (err.response?.status === 403 || err.response?.status === 401) {
+        // Token might be invalid, redirect to login
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login');
+      }
+    }
+  }, [navigate]);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -25,22 +40,7 @@ const Dashboard = () => {
       localStorage.removeItem('token');
       navigate('/login');
     }
-  }, [navigate]);
-
-  const fetchUrls = async () => {
-    try {
-      const response = await api.get('/api/urls/my');
-      setUrls(response.data?.urls || response.data || []);
-    } catch (err) {
-      console.error('Error fetching URLs:', err);
-      if (err.response?.status === 403 || err.response?.status === 401) {
-        // Token might be invalid, redirect to login
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        navigate('/login');
-      }
-    }
-  };
+  }, [navigate, fetchUrls]);
 
   const handleShorten = async (e) => {
     e.preventDefault();
@@ -49,7 +49,7 @@ const Dashboard = () => {
 
     try {
       const response = await api.post('/api/shorten', { originalUrl });
-      setUrls([response.data?.url || response.data, ...urls]);
+      setUrls([response.data, ...urls]);
       setOriginalUrl('');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to shorten URL');
@@ -68,12 +68,21 @@ const Dashboard = () => {
     navigator.clipboard.writeText(text);
   };
 
-  const handleDelete = async (urlId) => {
+  const handleDelete = async (urlCode, shortUrl) => {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete this URL?\n\n${shortUrl}\n\nThis action cannot be undone.`
+    );
+    
+    if (!confirmDelete) {
+      return;
+    }
+
     try {
-      await api.delete(`/api/${urlId}`);
-      setUrls(urls.filter(url => url._id !== urlId));
+      await api.delete(`/api/urls/${urlCode}`);
+      setUrls(urls.filter(url => url.urlCode !== urlCode));
     } catch (err) {
       console.error('Error deleting URL:', err);
+      setError(err.response?.data?.message || 'Failed to delete URL');
     }
   };
 
@@ -193,7 +202,7 @@ const Dashboard = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => handleDelete(url._id)}
+                      onClick={() => handleDelete(url.urlCode, url.shortUrl)}
                       className="text-red-600 hover:text-red-700 p-2"
                       title="Delete URL"
                     >

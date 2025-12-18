@@ -22,8 +22,8 @@ router.get('/urls', auth, authorize('admin'), getAllUrls);
 // Get URL statistics by code (authenticated users)
 router.get('/stats/:code', auth, getUrlStats);
 
-// Delete a URL by code (admin only)
-router.delete('/urls/:code', auth, authorize('admin'), deleteUrl);
+// Delete a URL by code (authenticated users can delete their own, admins can delete any)
+router.delete('/urls/:code', auth, deleteUrl);
 
 // Redirect to original URL (public - no auth required)
 router.get('/:code', redirectUrl);
