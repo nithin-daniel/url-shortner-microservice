@@ -19,8 +19,8 @@ const createShortUrl = async (req, res) => {
       return errorResponse(res, 400, "Invalid URL format");
     }
 
-    // Check if URL already exists (not deleted)
-    let url = await Url.findOne({ originalUrl, deletedAt: null });
+    // Check if URL already exists (not deleted) for this user
+    let url = await Url.findOne({ originalUrl, userId: req.user.id, deletedAt: null });
     if (url) {
       return successResponse(res, 200, "URL already exists", url);
     }
@@ -60,6 +60,7 @@ const createShortUrl = async (req, res) => {
       originalUrl,
       shortUrl,
       urlCode,
+      userId: req.user.id,
       expiresAt: expiryDate,
     });
 
@@ -93,6 +94,22 @@ const getAllUrls = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching URLs:", error);
+    return errorResponse(res, 500, "Server error", { details: error.message });
+  }
+};
+
+/**
+ * Get URLs for the authenticated user
+ */
+const getUserUrls = async (req, res) => {
+  try {
+    const urls = await Url.find({ userId: req.user.id, deletedAt: null }).sort({ createdAt: -1 });
+    return successResponse(res, 200, "URLs retrieved successfully", {
+      urls,
+      count: urls.length
+    });
+  } catch (error) {
+    console.error("Error fetching user URLs:", error);
     return errorResponse(res, 500, "Server error", { details: error.message });
   }
 };
@@ -196,6 +213,7 @@ const deleteUrl = async (req, res) => {
 module.exports = {
   createShortUrl,
   getAllUrls,
+  getUserUrls,
   redirectUrl,
   getUrlStats,
   deleteUrl,

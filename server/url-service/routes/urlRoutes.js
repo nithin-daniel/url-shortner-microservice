@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   createShortUrl,
   getAllUrls,
+  getUserUrls,
   redirectUrl,
   getUrlStats,
   deleteUrl,
@@ -11,6 +12,9 @@ const { auth, authorize } = require('../middleware/auth');
 
 // Create a shortened URL (authenticated users only)
 router.post('/shorten', auth, createShortUrl);
+
+// Get user's own URLs (authenticated users)
+router.get('/urls/my', auth, getUserUrls);
 
 // Get all URLs (admin only)
 router.get('/urls', auth, authorize('admin'), getAllUrls);

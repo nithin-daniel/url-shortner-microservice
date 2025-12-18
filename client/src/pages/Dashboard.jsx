@@ -29,11 +29,11 @@ const Dashboard = () => {
 
   const fetchUrls = async () => {
     try {
-      const response = await api.get('/api/urls');
+      const response = await api.get('/api/urls/my');
       setUrls(response.data?.urls || response.data || []);
     } catch (err) {
       console.error('Error fetching URLs:', err);
-      if (err.response?.status === 403) {
+      if (err.response?.status === 403 || err.response?.status === 401) {
         // Token might be invalid, redirect to login
         localStorage.removeItem('token');
         localStorage.removeItem('user');
