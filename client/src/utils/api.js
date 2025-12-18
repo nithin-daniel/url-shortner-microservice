@@ -23,4 +23,18 @@ api.interceptors.request.use(
   }
 );
 
+// Add response interceptor to unwrap nested data structure
+api.interceptors.response.use(
+  (response) => {
+    // If response has data.data structure, unwrap it
+    if (response.data && response.data.data !== undefined) {
+      return { ...response, data: response.data.data };
+    }
+    return response;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 export default api;

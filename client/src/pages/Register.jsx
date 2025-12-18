@@ -35,10 +35,16 @@ const Register = () => {
     try {
       const { confirmPassword, ...registrationData } = formData;
       const response = await api.post('/api/auth/register', registrationData);
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-      navigate('/dashboard');
+      
+      if (response.data?.token && response.data?.user) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        navigate('/dashboard');
+      } else {
+        setError('Invalid response from server. Please try again.');
+      }
     } catch (err) {
+      console.error('Registration error:', err);
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);

@@ -12,20 +12,33 @@ const Dashboard = () => {
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
-    if (!userData) {
+    if (!userData || userData === 'undefined') {
       navigate('/login');
       return;
     }
-    setUser(JSON.parse(userData));
-    fetchUrls();
+    try {
+      setUser(JSON.parse(userData));
+      fetchUrls();
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      navigate('/login');
+    }
   }, [navigate]);
 
   const fetchUrls = async () => {
     try {
       const response = await api.get('/api/urls');
-      setUrls(response.data.urls || []);
+      setUrls(response.data?.urls || response.data || []);
     } catch (err) {
       console.error('Error fetching URLs:', err);
+      if (err.response?.status === 403) {
+        // Token might be invalid, redirect to login
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login');
+      }
     }
   };
 
@@ -36,7 +49,7 @@ const Dashboard = () => {
 
     try {
       const response = await api.post('/api/shorten', { originalUrl });
-      setUrls([response.data.url, ...urls]);
+      setUrls([response.data?.url || response.data, ...urls]);
       setOriginalUrl('');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to shorten URL');
