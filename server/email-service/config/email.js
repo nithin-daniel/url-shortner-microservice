@@ -2,45 +2,25 @@ const nodemailer = require('nodemailer');
 const logger = require('../utils/logger');
 
 /**
- * Create email transporter based on environment
- * Supports: SMTP, Gmail, SendGrid, Mailgun, etc.
+ * Create Gmail transporter for sending emails
+ * Requires: GMAIL_USER and GMAIL_APP_PASSWORD environment variables
+ * 
+ * To get Gmail App Password:
+ * 1. Enable 2-Step Verification on your Google Account
+ * 2. Go to https://myaccount.google.com/apppasswords
+ * 3. Generate a new App Password for "Mail"
+ * 4. Use that 16-character password as GMAIL_APP_PASSWORD
  */
 const createTransporter = () => {
-  // For development/testing - use Ethereal (fake SMTP)
-  if (process.env.NODE_ENV === 'development' || !process.env.SMTP_HOST) {
-    logger.info('Using Ethereal test email service');
-    return nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: {
-        user: process.env.ETHEREAL_USER || 'test@ethereal.email',
-        pass: process.env.ETHEREAL_PASS || 'testpassword',
-      },
-    });
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    logger.warn('Gmail credentials not configured. Set GMAIL_USER and GMAIL_APP_PASSWORD in environment variables.');
   }
 
-  // For production - use configured SMTP
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT) || 587,
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
-};
-
-/**
- * Gmail configuration (alternative)
- */
-const createGmailTransporter = () => {
   return nodemailer.createTransport({
     service: 'gmail',
     auth: {
       user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD, // Use App Password, not regular password
+      pass: process.env.GMAIL_APP_PASSWORD,
     },
   });
 };
