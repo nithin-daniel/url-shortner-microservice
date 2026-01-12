@@ -87,6 +87,15 @@ const sendPasswordResetEmail = async (email, resetToken, resetUrl) => {
 };
 
 /**
+ * Send login notification email
+ */
+const sendLoginNotificationEmail = async (email, timestamp) => {
+  const subject = `New login to your account - ${APP_NAME}`;
+  const html = emailTemplates.loginNotificationEmail(timestamp, APP_NAME);
+  return sendEmail(email, subject, html);
+};
+
+/**
  * Send custom email
  */
 const sendCustomEmail = async (email, subject, htmlContent) => {
@@ -100,5 +109,6 @@ module.exports = {
   sendAccountDeletedEmail,
   sendUrlCreatedEmail,
   sendPasswordResetEmail,
+  sendLoginNotificationEmail,
   sendCustomEmail,
 };

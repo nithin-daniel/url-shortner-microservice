@@ -71,6 +71,8 @@ const createShortUrl = async (req, res) => {
       urlCode: url.urlCode,
       originalUrl: url.originalUrl,
       shortUrl: url.shortUrl,
+      userEmail: req.user.email,
+      userId: req.user.id,
       expiresAt: url.expiresAt,
       timestamp: new Date().toISOString(),
     });

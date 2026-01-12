@@ -114,13 +114,20 @@ const initializeConsumers = async () => {
     await emailService.sendAccountDeletedEmail(data.email);
   });
 
+  // Send login notification (optional - can be disabled for frequent logins)
+  await subscribeToEvent('user_events', 'user.logged_in', 'email_service_user_logged_in', async (routingKey, data) => {
+    logger.info(`Processing ${routingKey} event for user: ${data.email}`);
+    await emailService.sendLoginNotificationEmail(data.email, data.timestamp);
+  });
+
   // ==================== URL EVENTS ====================
 
-  // Send confirmation when URL is created (optional - can be disabled)
+  // Send confirmation when URL is created
   await subscribeToEvent('url_events', 'url.created', 'email_service_url_created', async (routingKey, data) => {
     logger.info(`Processing ${routingKey} event for URL: ${data.urlCode}`);
-    // URL creation emails are optional - uncomment if needed
-    // await emailService.sendUrlCreatedEmail(data.userEmail, data.shortUrl, data.originalUrl);
+    if (data.userEmail) {
+      await emailService.sendUrlCreatedEmail(data.userEmail, data.shortUrl, data.originalUrl);
+    }
   });
 
   logger.info('Email Service consumers initialized');

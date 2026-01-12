@@ -9,6 +9,7 @@ const auth = async (req, res, next) => {
     // Get user info from nginx headers
     const userId = req.header('X-User-Id');
     const userRole = req.header('X-User-Role');
+    const userEmail = req.header('X-User-Email');
     
     if (!userId) {
       return errorResponse(res, 401, 'No user information provided, authorization denied');
@@ -17,7 +18,8 @@ const auth = async (req, res, next) => {
     // Attach user info to request
     req.user = {
       id: userId,
-      role: userRole || 'user'
+      role: userRole || 'user',
+      email: userEmail || ''
     };
     
     next();

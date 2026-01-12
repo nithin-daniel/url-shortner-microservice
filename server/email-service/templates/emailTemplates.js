@@ -226,6 +226,26 @@ const passwordResetEmail = (resetUrl, appName) => {
   return baseTemplate(content, appName);
 };
 
+/**
+ * Login notification email
+ */
+const loginNotificationEmail = (timestamp, appName) => {
+  const loginTime = new Date(timestamp).toLocaleString();
+  const content = `
+    <h2>New Login Detected 🔔</h2>
+    <p>We noticed a new login to your account.</p>
+    
+    <div class="highlight">
+      <p><strong>Login Time:</strong> ${loginTime}</p>
+    </div>
+    
+    <p>If this was you, you can safely ignore this email.</p>
+    
+    <p>⚠️ If you didn't log in, please secure your account immediately by changing your password.</p>
+  `;
+  return baseTemplate(content, appName);
+};
+
 module.exports = {
   baseTemplate,
   welcomeEmail,
@@ -233,4 +253,5 @@ module.exports = {
   accountDeletedEmail,
   urlCreatedEmail,
   passwordResetEmail,
+  loginNotificationEmail,
 };

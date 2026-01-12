@@ -38,7 +38,7 @@ const register = async (req, res) => {
     await user.save();
 
     // Generate token
-    const token = generateToken(user._id, user.role);
+    const token = generateToken(user._id, user.role, user.email);
 
     // Publish user registration event to RabbitMQ
     await publishEvent('user_events', 'user.registered', {
@@ -89,7 +89,7 @@ const login = async (req, res) => {
     }
 
     // Generate token
-    const token = generateToken(user._id, user.role);
+    const token = generateToken(user._id, user.role, user.email);
 
     // Publish user login event
     await publishEvent('user_events', 'user.logged_in', {

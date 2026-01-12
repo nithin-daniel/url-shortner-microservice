@@ -39,5 +39,4 @@ transporter.verify((error, success) => {
 module.exports = {
   transporter,
   createTransporter,
-  createGmailTransporter,
 };

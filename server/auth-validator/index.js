@@ -22,7 +22,8 @@ app.get('/validate', (req, res) => {
     // Return user info in headers for nginx to forward
     res.setHeader('X-User-Id', decoded.id);
     res.setHeader('X-User-Role', decoded.role || 'user');
-    res.status(200).json({ valid: true, userId: decoded.id, role: decoded.role || 'user' });
+    res.setHeader('X-User-Email', decoded.email || '');
+    res.status(200).json({ valid: true, userId: decoded.id, role: decoded.role || 'user', email: decoded.email || '' });
   } catch (error) {
     return res.status(401).json({ error: 'Invalid token', details: error.message });
   }
