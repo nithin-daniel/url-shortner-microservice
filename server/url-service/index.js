@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/database');
-const { connectRabbitMQ } = require('./config/rabbitmq');
+const { connectRabbitMQ, initializeConsumers } = require('./config/rabbitmq');
 const urlRoutes = require('./routes/urlRoutes');
 const { successResponse, errorResponse } = require('./utils/responseHandler');
 const logger = require('./utils/logger');
@@ -14,8 +14,11 @@ const PORT = process.env.PORT || 5002;
 // Connect to MongoDB
 connectDB();
 
-// Connect to RabbitMQ (non-blocking)
-connectRabbitMQ();
+// Connect to RabbitMQ and initialize consumers
+connectRabbitMQ().then(() => {
+  // Initialize consumers after successful connection
+  initializeConsumers();
+});
 
 // Middleware
 app.use(express.json());
