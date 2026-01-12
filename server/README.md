@@ -77,241 +77,531 @@ A production-ready microservices-based URL shortener application with authentica
 
 ---
 
-## 📋 TODO: Industrial Standard Improvements
+## 🎯 Junior → Mid → Senior Developer Roadmap
 
-### 🔴 Priority 1: Critical (Security & Reliability)
-
-#### Environment Variables Security
-- [ ] Use secrets management (HashiCorp Vault, AWS Secrets Manager, or Docker Secrets)
-- [ ] Remove hardcoded JWT secrets from docker-compose.yml
-- [ ] Add `.env.example` files with placeholders for all services
-- [ ] Implement environment validation on startup (using Joi or envalid)
-
-#### Authentication & Security Enhancements
-- [ ] Implement refresh tokens with rotation
-- [ ] Add token blacklisting for logout (Redis-based)
-- [ ] Implement rate limiting (express-rate-limit)
-- [ ] Add brute force protection (express-slow-down)
-- [ ] Implement password reset functionality
-- [ ] Add email verification for registration
-- [ ] Implement HTTPS/TLS (SSL certificates with Let's Encrypt)
-- [ ] Add Helmet.js for security headers
-- [ ] Implement CORS properly (whitelist specific origins)
-- [ ] Add input sanitization (express-mongo-sanitize)
-- [ ] Implement XSS protection (xss-clean)
-- [ ] Add CSRF protection for web clients
-- [ ] Implement API key authentication for service-to-service calls
-
-#### Database Security
-- [ ] Add MongoDB authentication (username/password)
-- [ ] Implement database connection pooling
-- [ ] Add database replica sets for high availability
-- [ ] Encrypt sensitive data at rest
-- [ ] Implement proper database indexing strategy
-- [ ] Add database backup automation
+> **For Junior Developers:** This roadmap is designed to help you grow from junior to mid/senior level by implementing industry-standard improvements step by step. Each phase builds on the previous one and teaches you essential skills that employers look for.
 
 ---
 
-### 🟠 Priority 2: Testing & Quality Assurance
+### 📍 Phase 1: Quick Wins (Week 1-2) 
+**⏱️ Time: 10-12 hours | 🎓 Skills: Security Basics, Configuration Management**
 
-#### Unit Testing
-- [ ] Set up Jest testing framework
-- [ ] Write unit tests for auth-service controllers
-- [ ] Write unit tests for url-service controllers
-- [ ] Write unit tests for utility functions (jwtUtils, urlUtils)
-- [ ] Write unit tests for middleware
-- [ ] Aim for 80%+ code coverage
+These are beginner-friendly tasks that immediately improve your project and teach fundamental concepts.
 
-#### Integration Testing
+| Task | Time | What You'll Learn |
+|------|------|-------------------|
+| Create `.env.example` files | 30 min | Environment variable management |
+| Add environment validation (Joi) | 1 hr | Input validation, fail-fast principle |
+| Install & configure Helmet.js | 30 min | HTTP security headers |
+| Add express-rate-limit | 1 hr | Protecting APIs from abuse |
+| Add express-mongo-sanitize | 30 min | NoSQL injection prevention |
+| Set up ESLint + Prettier | 1 hr | Code quality standards |
+| Add .editorconfig | 15 min | Consistent coding style |
+
+<details>
+<summary>📖 How to implement environment validation</summary>
+
+```javascript
+// config/env.js
+const Joi = require('joi');
+
+const envSchema = Joi.object({
+  NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
+  PORT: Joi.number().default(5001),
+  MONGODB_URI: Joi.string().required(),
+  JWT_SECRET: Joi.string().min(32).required(),
+  JWT_EXPIRES_IN: Joi.string().default('7d'),
+  RABBITMQ_URL: Joi.string().required(),
+}).unknown();
+
+const { value: env, error } = envSchema.validate(process.env);
+if (error) {
+  throw new Error(`Environment validation error: ${error.message}`);
+}
+
+module.exports = env;
+```
+</details>
+
+<details>
+<summary>📖 How to add security middleware</summary>
+
+```javascript
+// middleware/security.js
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const mongoSanitize = require('express-mongo-sanitize');
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  message: { success: false, message: 'Too many requests' }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5, // Stricter for login/register
+  message: { success: false, message: 'Too many attempts' }
+});
+
+module.exports = { helmet, limiter, authLimiter, mongoSanitize };
+```
+</details>
+
+**✅ Checklist:**
+- [ ] Create `.env.example` for auth-service
+- [ ] Create `.env.example` for url-service
+- [ ] Add environment validation with Joi
+- [ ] Install and configure Helmet.js
+- [ ] Add rate limiting to all endpoints
+- [ ] Add stricter rate limiting to auth endpoints
+- [ ] Add MongoDB sanitization
+- [ ] Set up ESLint
+- [ ] Set up Prettier
+- [ ] Add .editorconfig file
+
+---
+
+### 📍 Phase 2: Testing Foundation (Week 3-4)
+**⏱️ Time: 15-20 hours | 🎓 Skills: Unit Testing, Mocking, TDD**
+
+> 💡 **Why this matters:** Testing is the #1 skill gap between junior and mid-level developers. Companies LOVE candidates who can write tests.
+
+| Task | Time | What You'll Learn |
+|------|------|-------------------|
+| Set up Jest | 1 hr | Test framework configuration |
+| Write JWT utility tests | 2 hr | Unit testing basics |
+| Write controller tests | 4 hr | Mocking, dependency injection |
+| Write middleware tests | 2 hr | Testing Express middleware |
+| Add coverage reporting | 30 min | Code coverage metrics |
+| Write integration tests | 6 hr | API testing with Supertest |
+
+<details>
+<summary>📖 Example: Testing JWT utilities</summary>
+
+```javascript
+// __tests__/unit/jwtUtils.test.js
+const { generateToken, verifyToken } = require('../../utils/jwtUtils');
+
+describe('JWT Utilities', () => {
+  const mockUser = { _id: '12345', email: 'test@example.com', role: 'user' };
+
+  describe('generateToken', () => {
+    it('should generate a valid JWT token', () => {
+      const token = generateToken(mockUser);
+      expect(token).toBeDefined();
+      expect(typeof token).toBe('string');
+      expect(token.split('.')).toHaveLength(3); // JWT has 3 parts
+    });
+  });
+
+  describe('verifyToken', () => {
+    it('should verify and decode a valid token', () => {
+      const token = generateToken(mockUser);
+      const decoded = verifyToken(token);
+      expect(decoded.userId).toBe(mockUser._id);
+    });
+
+    it('should throw error for invalid token', () => {
+      expect(() => verifyToken('invalid')).toThrow();
+    });
+  });
+});
+```
+</details>
+
+<details>
+<summary>📖 Example: Testing controllers with mocks</summary>
+
+```javascript
+// __tests__/unit/authController.test.js
+const { register } = require('../../controllers/authController');
+const User = require('../../models/User');
+
+jest.mock('../../models/User');
+
+describe('Auth Controller', () => {
+  let mockReq, mockRes;
+
+  beforeEach(() => {
+    mockReq = { body: {} };
+    mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    };
+    jest.clearAllMocks();
+  });
+
+  describe('register', () => {
+    it('should return 400 if email already exists', async () => {
+      mockReq.body = { email: 'test@test.com', password: '123456', name: 'Test' };
+      User.findOne.mockResolvedValue({ email: 'test@test.com' });
+
+      await register(mockReq, mockRes);
+
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+    });
+  });
+});
+```
+</details>
+
+**✅ Checklist:**
+- [ ] Install Jest and configure package.json scripts
+- [ ] Write tests for `jwtUtils.js` (auth-service)
+- [ ] Write tests for `urlUtils.js` (url-service)
+- [ ] Write tests for `authController.js`
+- [ ] Write tests for `urlController.js`
+- [ ] Write tests for auth middleware
 - [ ] Set up Supertest for API testing
-- [ ] Write integration tests for auth endpoints
-- [ ] Write integration tests for URL endpoints
-- [ ] Test RabbitMQ event publishing
-- [ ] Test database operations with test database
-- [ ] Add MongoDB memory server for isolated tests
-
-#### End-to-End Testing
-- [ ] Set up E2E testing framework
-- [ ] Write E2E tests for user registration flow
-- [ ] Write E2E tests for URL shortening flow
-- [ ] Test complete user journeys
-
-#### Code Quality
-- [ ] Set up ESLint with Airbnb/Standard config
-- [ ] Set up Prettier for code formatting
-- [ ] Add Husky pre-commit hooks
-- [ ] Set up lint-staged for staged files
-- [ ] Add SonarQube/SonarCloud for code analysis
-- [ ] Implement commit message linting (commitlint)
+- [ ] Write integration tests for register/login flow
+- [ ] Add coverage reporting with `jest --coverage`
+- [ ] Aim for 70%+ code coverage
 
 ---
 
-### 🟡 Priority 3: Observability & Monitoring
+### 📍 Phase 3: API Documentation (Week 5)
+**⏱️ Time: 8-10 hours | 🎓 Skills: OpenAPI, Documentation, API Design**
 
-#### Logging
-- [ ] Implement structured logging (JSON format)
-- [ ] Add correlation IDs for request tracing across services
-- [ ] Set up log rotation
-- [ ] Integrate with ELK Stack (Elasticsearch, Logstash, Kibana)
-- [ ] Add log aggregation (Fluentd/Fluent Bit)
-- [ ] Implement log levels per environment
+> 💡 **Interview Gold:** Being able to show well-documented APIs demonstrates professionalism that impresses interviewers.
 
-#### Metrics & Monitoring
-- [ ] Set up Prometheus metrics collection
-- [ ] Create Grafana dashboards
-- [ ] Add custom application metrics:
-  - [ ] Request count per endpoint
-  - [ ] Response time percentiles
-  - [ ] Error rates
-  - [ ] Active users
-  - [ ] URLs created per hour
-  - [ ] Redirects per hour
-- [ ] Set up alerting rules (PagerDuty, Slack, Email)
+| Task | Time | What You'll Learn |
+|------|------|-------------------|
+| Set up Swagger/OpenAPI | 2 hr | API specification standards |
+| Document auth endpoints | 2 hr | JSDoc annotations |
+| Document URL endpoints | 2 hr | Request/response schemas |
+| Create Postman collection | 1 hr | API testing tools |
+| Add error code documentation | 1 hr | Error handling patterns |
 
-#### Distributed Tracing
-- [ ] Implement Jaeger/Zipkin for distributed tracing
-- [ ] Add OpenTelemetry instrumentation
-- [ ] Trace requests across microservices
-- [ ] Add span context propagation
+<details>
+<summary>📖 Example: Swagger setup</summary>
 
-#### Health Checks
-- [ ] Implement liveness probes
-- [ ] Implement readiness probes
-- [ ] Add dependency health checks (MongoDB, RabbitMQ)
-- [ ] Create health check dashboard
-- [ ] Add startup probes for slow-starting containers
+```javascript
+// config/swagger.js
+const swaggerJsdoc = require('swagger-jsdoc');
 
----
+const options = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Auth Service API',
+      version: '1.0.0',
+      description: 'Authentication microservice for URL Shortener',
+    },
+    servers: [{ url: 'http://localhost:5001', description: 'Development' }],
+    components: {
+      securitySchemes: {
+        bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }
+      }
+    }
+  },
+  apis: ['./routes/*.js'],
+};
 
-### 🟢 Priority 4: Performance & Scalability
+module.exports = swaggerJsdoc(options);
+```
 
-#### Caching
-- [ ] Add Redis for caching
-- [ ] Cache frequently accessed URLs
-- [ ] Implement cache invalidation strategy
-- [ ] Add session storage in Redis
-- [ ] Cache user authentication tokens
-- [ ] Implement cache-aside pattern
+```javascript
+// In your routes file - add JSDoc comments
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password, name]
+ *             properties:
+ *               email: { type: string, format: email }
+ *               password: { type: string, minLength: 6 }
+ *               name: { type: string }
+ *     responses:
+ *       201: { description: User registered successfully }
+ *       400: { description: Validation error or email exists }
+ */
+router.post('/register', register);
+```
+</details>
 
-#### Performance Optimization
-- [ ] Implement database connection pooling
-- [ ] Add database query optimization (explain analyze)
-- [ ] Implement pagination for list endpoints
-- [ ] Add compression middleware (gzip/brotli)
-- [ ] Optimize Docker images (multi-stage builds)
-- [ ] Add response caching headers
-- [ ] Implement lazy loading for heavy operations
-
-#### Scalability
-- [ ] Add horizontal scaling support
-- [ ] Implement load balancing with Nginx upstream
-- [ ] Set up Kubernetes deployment
-- [ ] Add auto-scaling policies (HPA)
-- [ ] Implement circuit breaker pattern (Opossum)
-- [ ] Add retry logic with exponential backoff
-- [ ] Implement bulkhead pattern for isolation
-
----
-
-### 🔵 Priority 5: DevOps & CI/CD
-
-#### CI/CD Pipeline
-- [ ] Set up GitHub Actions workflow
-- [ ] Implement automated testing in pipeline
-- [ ] Add code coverage reporting
-- [ ] Add Docker image building and pushing to registry
-- [ ] Implement staging environment deployment
-- [ ] Add production deployment workflow
-- [ ] Implement blue-green deployments
-- [ ] Add rollback capabilities
-- [ ] Implement semantic versioning
-
-#### Infrastructure as Code
-- [ ] Create Kubernetes manifests
-- [ ] Create Helm charts for easy deployment
-- [ ] Set up Terraform for cloud infrastructure
-- [ ] Implement GitOps with ArgoCD/Flux
-- [ ] Add infrastructure documentation
-
-#### Container Optimization
-- [ ] Use multi-stage Docker builds
-- [ ] Optimize Docker layer caching
-- [ ] Implement Docker image vulnerability scanning (Trivy)
-- [ ] Use distroless/Alpine base images
-- [ ] Add container resource limits
-- [ ] Implement proper signal handling (graceful shutdown)
-
----
-
-### 🟣 Priority 6: Documentation & Developer Experience
-
-#### API Documentation
-- [ ] Implement OpenAPI/Swagger specification
+**✅ Checklist:**
+- [ ] Install swagger-jsdoc and swagger-ui-express
+- [ ] Create Swagger configuration
+- [ ] Add JSDoc comments to auth routes
+- [ ] Add JSDoc comments to URL routes
 - [ ] Set up Swagger UI at `/api-docs`
-- [ ] Add API versioning (v1, v2)
 - [ ] Create Postman collection
-- [ ] Create Insomnia collection
-- [ ] Document all error codes and responses
-- [ ] Add request/response examples
-
-#### Developer Documentation
-- [ ] Write contribution guidelines (CONTRIBUTING.md)
-- [ ] Add code of conduct (CODE_OF_CONDUCT.md)
-- [ ] Create architecture decision records (ADRs)
-- [ ] Document deployment process (DEPLOYMENT.md)
-- [ ] Add troubleshooting guide (TROUBLESHOOTING.md)
-- [ ] Create runbook for operations
-
-#### Local Development
-- [ ] Add docker-compose.dev.yml for development
-- [ ] Create Makefile for common tasks
-- [ ] Add VS Code launch configurations (.vscode/launch.json)
-- [ ] Add VS Code recommended extensions
-- [ ] Implement hot reloading in Docker containers
-- [ ] Create development scripts
+- [ ] Export and include in repo
+- [ ] Document all error responses
 
 ---
 
-### ⚪ Priority 7: Additional Features
+### 📍 Phase 4: CI/CD Pipeline (Week 6)
+**⏱️ Time: 6-8 hours | 🎓 Skills: GitHub Actions, Automation, DevOps Basics**
 
-#### URL Service Enhancements
-- [ ] Add QR code generation for short URLs
-- [ ] Implement detailed analytics (geographic data, referrers, devices)
-- [ ] Add bulk URL shortening API
-- [ ] Implement URL password protection
-- [ ] Add URL tags/categories
-- [ ] Implement URL preview feature (unfurl)
-- [ ] Add URL validation (check if destination exists)
-- [ ] Implement custom domains support
-- [ ] Add link expiration notifications
+> 💡 **Senior Mindset:** Automating testing and deployment shows you think about the full software lifecycle.
 
-#### Auth Service Enhancements
-- [ ] Add OAuth2/Social login (Google, GitHub, Facebook)
-- [ ] Implement 2FA/MFA (TOTP)
-- [ ] Add session management
-- [ ] Implement account lockout policies
-- [ ] Add login history/audit log
-- [ ] Implement password strength requirements
-- [ ] Add account recovery options
+| Task | Time | What You'll Learn |
+|------|------|-------------------|
+| Create GitHub Actions workflow | 2 hr | CI/CD concepts |
+| Add automated testing | 1 hr | Pipeline stages |
+| Add linting checks | 1 hr | Quality gates |
+| Add Docker build step | 2 hr | Container automation |
 
-#### New Microservices
-- [ ] **Notification Service**
-  - [ ] Email notifications (welcome, password reset)
-  - [ ] Webhook notifications
-  - [ ] Consume RabbitMQ events
-  - [ ] Integration with SendGrid/Mailgun
+<details>
+<summary>📖 Example: GitHub Actions workflow</summary>
+
+```yaml
+# .github/workflows/ci.yml
+name: CI Pipeline
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+      
+      - name: Install & Test Auth Service
+        working-directory: ./server/auth-service
+        run: |
+          npm ci
+          npm run lint
+          npm test -- --coverage
+      
+      - name: Install & Test URL Service
+        working-directory: ./server/url-service
+        run: |
+          npm ci
+          npm run lint
+          npm test -- --coverage
+      
+      - name: Upload Coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./server/auth-service/coverage/lcov.info,./server/url-service/coverage/lcov.info
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build Docker Images
+        run: |
+          docker build -t auth-service ./server/auth-service
+          docker build -t url-service ./server/url-service
+```
+</details>
+
+**✅ Checklist:**
+- [ ] Create `.github/workflows/ci.yml`
+- [ ] Add test job for auth-service
+- [ ] Add test job for url-service
+- [ ] Add lint checks
+- [ ] Add Docker build verification
+- [ ] Add code coverage reporting
+- [ ] Test pipeline with a PR
+
+---
+
+### 📍 Phase 5: Observability (Week 7-8)
+**⏱️ Time: 12-15 hours | 🎓 Skills: Logging, Metrics, Monitoring**
+
+> 💡 **Production Readiness:** This is what separates hobby projects from production-ready systems.
+
+| Task | Time | What You'll Learn |
+|------|------|-------------------|
+| Add correlation IDs | 2 hr | Distributed tracing basics |
+| Implement structured logging | 2 hr | Log analysis |
+| Set up Prometheus metrics | 4 hr | Metrics collection |
+| Create Grafana dashboard | 4 hr | Data visualization |
+| Add health check endpoints | 2 hr | Container orchestration |
+
+<details>
+<summary>📖 Example: Correlation ID middleware</summary>
+
+```javascript
+// middleware/correlationId.js
+const { v4: uuidv4 } = require('uuid');
+
+const correlationIdMiddleware = (req, res, next) => {
+  req.correlationId = req.headers['x-correlation-id'] || uuidv4();
+  res.setHeader('x-correlation-id', req.correlationId);
   
-- [ ] **Analytics Service**
-  - [ ] Track detailed click analytics
-  - [ ] Generate reports (daily, weekly, monthly)
-  - [ ] Export analytics data (CSV, PDF)
-  - [ ] Real-time analytics dashboard
+  // Add to all subsequent logs
+  req.logger = req.app.get('logger').child({ 
+    correlationId: req.correlationId 
+  });
   
-- [ ] **Admin Dashboard Service**
-  - [ ] System health monitoring
-  - [ ] User management UI
-  - [ ] URL management UI
-  - [ ] Analytics visualization
+  next();
+};
+
+module.exports = correlationIdMiddleware;
+```
+</details>
+
+<details>
+<summary>📖 Example: Prometheus metrics</summary>
+
+```javascript
+// middleware/metrics.js
+const promClient = require('prom-client');
+
+const register = new promClient.Registry();
+promClient.collectDefaultMetrics({ register });
+
+const httpDuration = new promClient.Histogram({
+  name: 'http_request_duration_seconds',
+  help: 'Duration of HTTP requests',
+  labelNames: ['method', 'route', 'status'],
+  buckets: [0.1, 0.3, 0.5, 1, 3, 5, 10]
+});
+register.registerMetric(httpDuration);
+
+const metricsMiddleware = (req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = (Date.now() - start) / 1000;
+    httpDuration.labels(req.method, req.route?.path || req.path, res.statusCode).observe(duration);
+  });
+  next();
+};
+
+// Metrics endpoint
+const metricsEndpoint = async (req, res) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
+};
+
+module.exports = { metricsMiddleware, metricsEndpoint, register };
+```
+</details>
+
+**✅ Checklist:**
+- [ ] Add correlation ID middleware
+- [ ] Update Winston for structured JSON logging
+- [ ] Pass correlation IDs between services
+- [ ] Install prom-client
+- [ ] Add HTTP request metrics
+- [ ] Add custom business metrics
+- [ ] Create `/metrics` endpoint
+- [ ] Set up Prometheus in docker-compose
+- [ ] Create basic Grafana dashboard
+- [ ] Add `/health` and `/ready` endpoints
+
+---
+
+### 📍 Phase 6: Advanced Security (Week 9-10)
+**⏱️ Time: 15-20 hours | 🎓 Skills: Token Management, Redis, Security Patterns**
+
+| Task | Time | What You'll Learn |
+|------|------|-------------------|
+| Implement refresh tokens | 4 hr | Token rotation strategy |
+| Add Redis for token storage | 3 hr | Caching layer |
+| Implement token blacklisting | 3 hr | Secure logout |
+| Add password reset flow | 4 hr | Email integration |
+| Implement CORS properly | 2 hr | Cross-origin security |
+
+**✅ Checklist:**
+- [ ] Add Redis to docker-compose
+- [ ] Implement refresh token endpoint
+- [ ] Store refresh tokens in Redis
+- [ ] Implement token blacklisting for logout
+- [ ] Add password reset with email
+- [ ] Configure CORS with whitelist
+- [ ] Add MongoDB authentication
+- [ ] Create database indexes
+
+---
+
+### 📍 Phase 7: Performance & Caching (Week 11-12)
+**⏱️ Time: 12-15 hours | 🎓 Skills: Caching, Optimization, Scalability**
+
+| Task | Time | What You'll Learn |
+|------|------|-------------------|
+| Cache URL lookups in Redis | 4 hr | Cache-aside pattern |
+| Add compression middleware | 1 hr | Response optimization |
+| Implement pagination | 3 hr | Large dataset handling |
+| Optimize Docker images | 2 hr | Multi-stage builds |
+| Add database indexing | 2 hr | Query optimization |
+
+**✅ Checklist:**
+- [ ] Cache short URL → original URL in Redis
+- [ ] Implement cache invalidation on URL delete
+- [ ] Add compression (gzip) middleware
+- [ ] Implement cursor-based pagination
+- [ ] Use multi-stage Docker builds
+- [ ] Add database indexes for common queries
+- [ ] Add response caching headers
+
+---
+
+### 📍 Phase 8: Production Features (Week 13+)
+**⏱️ Time: Ongoing | 🎓 Skills: Full-Stack, System Design**
+
+These are "when you're ready" features that make your project stand out:
+
+**URL Service Enhancements:**
+- [ ] QR code generation for short URLs
+- [ ] Click analytics (geographic, device, referrer)
+- [ ] Bulk URL shortening API
+- [ ] Custom domains support
+- [ ] URL expiration notifications
+
+**Auth Service Enhancements:**
+- [ ] OAuth2 (Google, GitHub login)
+- [ ] 2FA/MFA with TOTP
+- [ ] Login audit log
+- [ ] Account lockout policies
+
+**New Microservices:**
+- [ ] Notification Service (email, webhooks)
+- [ ] Analytics Service (reports, dashboards)
+- [ ] Admin Dashboard Service
+
+---
+
+## 📚 Learning Resources
+
+| Phase | Topic | Free Resources |
+|-------|-------|----------------|
+| 1 | Security | [OWASP Node.js Cheatsheet](https://cheatsheetseries.owasp.org/cheatsheets/Nodejs_Security_Cheat_Sheet.html) |
+| 2 | Testing | [Jest Docs](https://jestjs.io/docs/getting-started) |
+| 3 | API Design | [OpenAPI Tutorial](https://swagger.io/docs/specification/about/) |
+| 4 | CI/CD | [GitHub Actions Docs](https://docs.github.com/en/actions) |
+| 5 | Monitoring | [Prometheus Getting Started](https://prometheus.io/docs/introduction/first_steps/) |
+| 6 | Redis | [Redis University](https://university.redis.com/) |
+| 7 | System Design | [System Design Primer](https://github.com/donnemartin/system-design-primer) |
+
+---
+
+## 💼 How This Helps Your Career
+
+| Phase Completed | Level You Can Claim | Interview Talking Points |
+|-----------------|---------------------|--------------------------|
+| Phase 1-2 | Strong Junior | "I understand security basics and write tests" |
+| Phase 3-4 | Junior → Mid | "I document APIs and set up CI/CD pipelines" |
+| Phase 5-6 | Mid-Level | "I build observable, production-ready systems" |
+| Phase 7-8 | Mid → Senior | "I design for scale and implement complex features" |
 
 ---
 
