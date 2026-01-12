@@ -114,7 +114,7 @@ services:
       MONGODB_URI: mongodb://mongodb:27017/url-service
       JWT_SECRET: your_super_secret_jwt_key_change_in_production
       RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672
-      BASE_URL: http://localhost/api
+      BASE_URL: http://localhost
       DEFAULT_EXPIRY_DAYS: 30
       LOG_LEVEL: info
     depends_on:
