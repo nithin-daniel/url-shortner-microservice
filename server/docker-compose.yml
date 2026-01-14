@@ -5,7 +5,7 @@ services:
     container_name: nginx-gateway
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "${NGINX_PORT:-80}:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - nginx_logs:/var/log/nginx
@@ -32,7 +32,7 @@ services:
       - "9000"
     environment:
       PORT: 9000
-      JWT_SECRET: your_super_secret_jwt_key_change_in_production
+      JWT_SECRET: ${JWT_SECRET}
     networks:
       - microservices-network
     volumes:
@@ -45,13 +45,13 @@ services:
     container_name: mongodb
     restart: unless-stopped
     ports:
-      - "27017:27017"
+      - "${MONGODB_PORT:-27017}:27017"
     volumes:
       - mongodb_data:/data/db
     networks:
       - microservices-network
     environment:
-      MONGO_INITDB_DATABASE: url_shortener
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-url_shortener}
 
   # RabbitMQ Message Broker
   rabbitmq:
@@ -59,15 +59,15 @@ services:
     container_name: rabbitmq
     restart: unless-stopped
     ports:
-      - "5672:5672"    # AMQP port
-      - "15672:15672"  # Management UI
+      - "${RABBITMQ_PORT:-5672}:5672"    # AMQP port
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"  # Management UI
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - microservices-network
     environment:
-      RABBITMQ_DEFAULT_USER: admin
-      RABBITMQ_DEFAULT_PASS: admin123
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-admin123}
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 30s
@@ -82,14 +82,17 @@ services:
     container_name: auth-service
     restart: unless-stopped
     expose:
-      - "5001"
+      - "${AUTH_SERVICE_PORT:-5001}"
     environment:
-      PORT: 5001
-      MONGODB_URI: mongodb://mongodb:27017/auth-service
-      JWT_SECRET: your_super_secret_jwt_key_change_in_production
-      JWT_EXPIRES_IN: 7d
-      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672
-      LOG_LEVEL: http
+      PORT: ${AUTH_SERVICE_PORT:-5001}
+      MONGODB_URI: mongodb://mongodb:27017/${AUTH_DB_NAME:-auth-service}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER:-admin}:${RABBITMQ_DEFAULT_PASS:-admin123}@rabbitmq:5672
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@urlshortener.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@123}
+      ADMIN_NAME: ${ADMIN_NAME:-Admin User}
     depends_on:
       - mongodb
       - rabbitmq
@@ -108,15 +111,15 @@ services:
     container_name: url-service
     restart: unless-stopped
     expose:
-      - "5002"
+      - "${URL_SERVICE_PORT:-5002}"
     environment:
-      PORT: 5002
-      MONGODB_URI: mongodb://mongodb:27017/url-service
-      JWT_SECRET: your_super_secret_jwt_key_change_in_production
-      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672
-      BASE_URL: http://localhost
-      DEFAULT_EXPIRY_DAYS: 30
-      LOG_LEVEL: info
+      PORT: ${URL_SERVICE_PORT:-5002}
+      MONGODB_URI: mongodb://mongodb:27017/${URL_DB_NAME:-url-service}
+      JWT_SECRET: ${JWT_SECRET}
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER:-admin}:${RABBITMQ_DEFAULT_PASS:-admin123}@rabbitmq:5672
+      BASE_URL: ${BASE_URL:-http://localhost}
+      DEFAULT_EXPIRY_DAYS: ${DEFAULT_EXPIRY_DAYS:-30}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
       - mongodb
       - rabbitmq
@@ -135,16 +138,16 @@ services:
     container_name: email-service
     restart: unless-stopped
     expose:
-      - "5003"
+      - "${EMAIL_SERVICE_PORT:-5003}"
     environment:
-      PORT: 5003
-      NODE_ENV: production
-      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672
+      PORT: ${EMAIL_SERVICE_PORT:-5003}
+      NODE_ENV: ${NODE_ENV:-production}
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER:-admin}:${RABBITMQ_DEFAULT_PASS:-admin123}@rabbitmq:5672
       GMAIL_USER: ${GMAIL_USER}
       GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD}
-      FROM_EMAIL: ${GMAIL_USER}
-      APP_NAME: URL Shortener
-      LOG_LEVEL: info
+      FROM_EMAIL: ${FROM_EMAIL:-${GMAIL_USER}}
+      APP_NAME: ${APP_NAME:-URL Shortener}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
       - rabbitmq
     networks:
