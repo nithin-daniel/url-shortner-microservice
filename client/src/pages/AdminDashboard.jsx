@@ -5,7 +5,9 @@ import api from '../utils/api';
 const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const [urls, setUrls] = useState([]);
-  const [activeTab, setActiveTab] = useState('active'); // active, expired, deleted
+  const [users, setUsers] = useState([]);
+  const [userUrlCounts, setUserUrlCounts] = useState({});
+  const [activeTab, setActiveTab] = useState('active'); // active, expired, deleted, users
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
@@ -37,6 +39,36 @@ const AdminDashboard = () => {
     }
   }, [navigate]);
 
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const usersResponse = await api.get('/api/auth/users');
+      const fetchedUsers = usersResponse.data.users || [];
+      setUsers(fetchedUsers);
+      
+      const urlCountsResponse = await api.get('/api/admin/user-url-counts');
+      const urlCountsData = urlCountsResponse.data.userUrlCounts || [];
+      const counts = {};
+      urlCountsData.forEach(item => {
+        // Store using the string version of the userId
+        const id = String(item._id);
+        counts[id] = item;
+      });
+      console.log('Users:', fetchedUsers);
+      console.log('URL Counts:', counts);
+      setUserUrlCounts(counts);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+      if (err.response?.status === 403 || err.response?.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [navigate]);
+
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (!userData || userData === 'undefined') {
@@ -51,18 +83,22 @@ const AdminDashboard = () => {
       }
       setUser(parsedUser);
       fetchStats();
-      fetchUrls(activeTab);
+      
+      if (activeTab === 'users') {
+        fetchUsers();
+      } else {
+        fetchUrls(activeTab);
+      }
     } catch (error) {
       console.error('Error parsing user data:', error);
       localStorage.removeItem('user');
       localStorage.removeItem('token');
       navigate('/login');
     }
-  }, [navigate, fetchStats, fetchUrls, activeTab]);
+  }, [navigate, fetchStats, fetchUrls, fetchUsers, activeTab]);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-    fetchUrls(tab);
   };
 
   const handleLogout = () => {
@@ -152,10 +188,10 @@ const AdminDashboard = () => {
 
         {/* Tabs */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
-          <div className="flex border-b border-gray-200 mb-6">
+          <div className="flex border-b border-gray-200 mb-6 overflow-x-auto">
             <button
               onClick={() => handleTabChange('active')}
-              className={`px-6 py-3 font-semibold transition-colors ${
+              className={`px-6 py-3 font-semibold transition-colors whitespace-nowrap ${
                 activeTab === 'active'
                   ? 'text-green-600 border-b-2 border-green-600'
                   : 'text-gray-500 hover:text-gray-700'
@@ -165,7 +201,7 @@ const AdminDashboard = () => {
             </button>
             <button
               onClick={() => handleTabChange('expired')}
-              className={`px-6 py-3 font-semibold transition-colors ${
+              className={`px-6 py-3 font-semibold transition-colors whitespace-nowrap ${
                 activeTab === 'expired'
                   ? 'text-orange-600 border-b-2 border-orange-600'
                   : 'text-gray-500 hover:text-gray-700'
@@ -175,13 +211,23 @@ const AdminDashboard = () => {
             </button>
             <button
               onClick={() => handleTabChange('deleted')}
-              className={`px-6 py-3 font-semibold transition-colors ${
+              className={`px-6 py-3 font-semibold transition-colors whitespace-nowrap ${
                 activeTab === 'deleted'
                   ? 'text-red-600 border-b-2 border-red-600'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               Deleted URLs ({stats?.deletedUrls || 0})
+            </button>
+            <button
+              onClick={() => handleTabChange('users')}
+              className={`px-6 py-3 font-semibold transition-colors whitespace-nowrap ${
+                activeTab === 'users'
+                  ? 'text-indigo-600 border-b-2 border-indigo-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Users ({users.length || 0})
             </button>
           </div>
 
@@ -196,8 +242,73 @@ const AdminDashboard = () => {
           {loading ? (
             <div className="text-center py-12">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-              <p className="mt-4 text-gray-600">Loading URLs...</p>
+              <p className="mt-4 text-gray-600">Loading {activeTab === 'users' ? 'users' : 'URLs'}...</p>
             </div>
+          ) : activeTab === 'users' ? (
+            // Users Tab Content
+            users.length === 0 ? (
+              <div className="text-center py-12">
+                <svg
+                  className="mx-auto h-12 w-12 text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4.354a4 4 0 110 5.292M15 12H9m6 0a6 6 0 11-12 0 6 6 0 0112 0z"
+                  />
+                </svg>
+                <p className="mt-4 text-gray-600">No users found.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-300 bg-gray-50">
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Name</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Email</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Role</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">URLs Generated</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Active</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Joined</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {users.map((u) => {
+                      const userId = String(u._id || u.id);
+                      const urlCount = userUrlCounts[userId] || {};
+                      return (
+                        <tr key={userId} className="hover:bg-gray-50 transition duration-150">
+                          <td className="px-6 py-4 text-sm text-gray-900">{u.name || '-'}</td>
+                          <td className="px-6 py-4 text-sm text-gray-600">{u.email}</td>
+                          <td className="px-6 py-4 text-sm">
+                            <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
+                              u.role === 'admin' 
+                                ? 'bg-purple-100 text-purple-800'
+                                : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {u.role}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm font-semibold text-gray-900">
+                            {urlCount.count || 0}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-green-600 font-medium">
+                            {urlCount.activeCount || 0}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {new Date(u.createdAt).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )
           ) : urls.length === 0 ? (
             <div className="text-center py-12">
               <svg

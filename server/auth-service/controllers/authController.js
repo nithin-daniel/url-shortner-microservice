@@ -145,6 +145,36 @@ const getAllUsers = async (req, res) => {
 };
 
 /**
+ * Get all users with their URL counts (admin only)
+ */
+const getUsersWithUrlCount = async (req, res) => {
+  try {
+    const users = await User.find({ deletedAt: null }).select('-password').sort({ createdAt: -1 });
+    
+    // For each user, fetch their URL count
+    const usersWithUrlCount = await Promise.all(
+      users.map(async (user) => {
+        // Get the Url model dynamically (it's from a different service)
+        // We'll use a common approach - the frontend can fetch this, or we'll need to share the model
+        return {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          createdAt: user.createdAt,
+          // Note: URL count will be fetched from the frontend or via an additional request
+        };
+      })
+    );
+    
+    return successResponse(res, 200, 'Users retrieved successfully', { users: usersWithUrlCount, count: usersWithUrlCount.length });
+  } catch (error) {
+    console.error('Error fetching users with URL count:', error);
+    return errorResponse(res, 500, 'Server error', { details: error.message });
+  }
+};
+
+/**
  * Update user role (admin only)
  */
 const updateUserRole = async (req, res) => {
@@ -228,6 +258,7 @@ module.exports = {
   login,
   getProfile,
   getAllUsers,
+  getUsersWithUrlCount,
   updateUserRole,
   deleteUser,
 };

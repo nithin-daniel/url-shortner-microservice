@@ -8,6 +8,7 @@ const {
   getUrlStats,
   deleteUrl,
   getAdminStats,
+  getUserUrlCounts,
 } = require('../controllers/urlController');
 const { auth, authorize } = require('../middleware/auth');
 
@@ -19,6 +20,9 @@ router.get('/urls/my', auth, getUserUrls);
 
 // Get admin statistics (admin only)
 router.get('/admin/stats', auth, authorize('admin'), getAdminStats);
+
+// Get user URL counts (admin only)
+router.get('/admin/user-url-counts', auth, authorize('admin'), getUserUrlCounts);
 
 // Get all URLs (admin only) - supports ?status=active|expired|deleted
 router.get('/urls', auth, authorize('admin'), getAllUrls);

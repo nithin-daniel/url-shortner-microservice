@@ -5,6 +5,7 @@ const {
   login, 
   getProfile,
   getAllUsers,
+  getUsersWithUrlCount,
   updateUserRole,
   deleteUser
 } = require('../controllers/authController');
@@ -19,6 +20,7 @@ router.get('/profile', auth, getProfile);
 
 // Admin only routes
 router.get('/users', auth, authorize('admin'), getAllUsers);
+router.get('/admin/users-stats', auth, authorize('admin'), getUsersWithUrlCount);
 router.put('/users/:userId/role', auth, authorize('admin'), updateUserRole);
 router.delete('/users/:userId', auth, authorize('admin'), deleteUser);
 

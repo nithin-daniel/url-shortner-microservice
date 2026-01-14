@@ -279,6 +279,54 @@ const getAdminStats = async (req, res) => {
   }
 };
 
+/**
+ * Get URL count per user (admin only)
+ */
+const getUserUrlCounts = async (req, res) => {
+  try {
+    const userUrlCounts = await Url.aggregate([
+      { $match: { deletedAt: null } },
+      {
+        $group: {
+          _id: { $toString: '$userId' },
+          count: { $sum: 1 },
+          activeCount: {
+            $sum: {
+              $cond: [
+                {
+                  $or: [
+                    { $gte: ['$expiresAt', new Date()] },
+                    { $eq: ['$expiresAt', null] }
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          },
+          expiredCount: {
+            $sum: {
+              $cond: [
+                { $lt: ['$expiresAt', new Date()] },
+                1,
+                0
+              ]
+            }
+          }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+
+    return successResponse(res, 200, "User URL counts retrieved successfully", {
+      userUrlCounts
+    });
+  } catch (error) {
+    console.error("Error fetching user URL counts:", error);
+    return errorResponse(res, 500, "Server error", { details: error.message });
+  }
+};
+
 module.exports = {
   createShortUrl,
   getAllUrls,
@@ -287,4 +335,5 @@ module.exports = {
   getUrlStats,
   deleteUrl,
   getAdminStats,
+  getUserUrlCounts,
 };
