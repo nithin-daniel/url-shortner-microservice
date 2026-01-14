@@ -4,7 +4,7 @@ const { connectRabbitMQ, initializeConsumers } = require('./config/rabbitmq');
 const logger = require('./utils/logger');
 
 const app = express();
-const PORT = process.env.PORT || 5003;
+const PORT = process.env.EMAIL_SERVICE_PORT || 5003;
 
 // Middleware
 app.use(express.json());

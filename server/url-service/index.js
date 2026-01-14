@@ -9,7 +9,7 @@ const logger = require('./utils/logger');
 const requestLogger = require('./middleware/requestLogger');
 
 const app = express();
-const PORT = process.env.PORT || 5002;
+const PORT = process.env.URL_SERVICE_PORT || 5002;
 
 // Connect to MongoDB
 connectDB();

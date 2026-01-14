@@ -2,7 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 
 const app = express();
-const PORT = process.env.PORT || 9000;
+const PORT = process.env.AUTH_VALIDATOR_PORT || 9000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_jwt_key_change_in_production';
 
 // Auth validation endpoint for nginx
