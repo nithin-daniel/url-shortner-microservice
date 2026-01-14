@@ -23,16 +23,7 @@ const sendEmail = async (to, subject, html, text = '') => {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    logger.info(`Email sent successfully to ${to}: ${info.messageId}`);
-    
-    // For Ethereal test emails, log the preview URL
-    if (info.messageId && process.env.NODE_ENV === 'development') {
-      const nodemailer = require('nodemailer');
-      const previewUrl = nodemailer.getTestMessageUrl(info);
-      if (previewUrl) {
-        logger.info(`Preview URL: ${previewUrl}`);
-      }
-    }
+    logger.info(`Email sent successfully to ${to} via Gmail - Message ID: ${info.messageId}, Response: ${info.response}`);
     
     return { success: true, messageId: info.messageId };
   } catch (error) {
