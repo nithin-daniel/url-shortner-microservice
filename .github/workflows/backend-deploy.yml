@@ -26,7 +26,7 @@ jobs:
             cd /srv/your-app
 
             if [ ! -d ".git" ]; then
-              git clone https://github.com/your-org/your-repo.git .
+              git clone https://github.com/nithin-daniel/url-shortner-microservice.git .
             else
               git fetch --all
               git reset --hard origin/master
