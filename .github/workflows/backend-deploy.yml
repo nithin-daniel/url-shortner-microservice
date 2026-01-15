@@ -1,0 +1,36 @@
+name: Deploy Microservices
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to DigitalOcean Droplet
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USER }}
+          password: ${{ secrets.DO_PASSWORD }}   # or use key: ${{ secrets.DO_SSH_KEY }}
+          port: 22
+          script: |
+            set -e
+            mkdir -p /srv/your-app
+            cd /srv/your-app
+
+            if [ ! -d ".git" ]; then
+              git clone https://github.com/your-org/your-repo.git .
+            else
+              git fetch --all
+              git reset --hard origin/master
+            fi
+
+            docker compose down
+            docker compose up -d --build
