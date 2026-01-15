@@ -8,7 +8,7 @@ const jwt = require('jsonwebtoken');
 const verifyToken = (token) => {
   return jwt.verify(
     token,
-    process.env.JWT_SECRET || 'your-secret-key-change-in-production'
+    process.env.JWT_SECRET
   );
 };
 

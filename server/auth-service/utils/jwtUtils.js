@@ -10,7 +10,7 @@ const jwt = require('jsonwebtoken');
 const generateToken = (userId, userRole = 'user', userEmail = '') => {
   return jwt.sign(
     { id: userId, role: userRole, email: userEmail },
-    process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+    process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
 };
@@ -23,7 +23,7 @@ const generateToken = (userId, userRole = 'user', userEmail = '') => {
 const verifyToken = (token) => {
   return jwt.verify(
     token,
-    process.env.JWT_SECRET || 'your-secret-key-change-in-production'
+    process.env.JWT_SECRET
   );
 };
 

@@ -27,11 +27,17 @@ const Login = () => {
     try {
       const response = await api.post('/api/auth/login', formData);
       
-      if (response.data?.token && response.data?.user) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+      // Handle both wrapped and unwrapped response structures
+      const data = response.data;
+      const token = data?.token || data?.data?.token;
+      const user = data?.user || data?.data?.user;
+      
+      if (token && user) {
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
         navigate('/dashboard');
       } else {
+        console.error('Missing token or user in response:', { token, user, data });
         setError('Invalid response from server. Please try again.');
       }
     } catch (err) {
