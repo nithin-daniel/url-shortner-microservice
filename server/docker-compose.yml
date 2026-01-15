@@ -156,6 +156,19 @@ services:
       - ./email-service:/app
       - /app/node_modules
       - email_logs:/app/logs
+  # Certbot for SSL Certificates
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./nginx/certs:/etc/letsencrypt
+      - ./nginx/www:/var/www/certbot
+    entrypoint: >
+      certbot certonly --webroot
+      --webroot-path=/var/www/certbot
+      --email nithindaniel2018@gmail.com
+      --agree-tos
+      --no-eff-email
+      -d api.clingo.nithindaniel.tech
 
 networks:
   microservices-network:
