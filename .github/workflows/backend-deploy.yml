@@ -33,5 +33,18 @@ jobs:
             fi
 
             cd server
+            
+            # Create .env file with secrets
+            cat > .env << EOF
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}
+            AUTH_SERVICE_PORT=${{ secrets.AUTH_SERVICE_PORT }}
+            AUTH_VALIDATOR_PORT=${{ secrets.AUTH_VALIDATOR_PORT }}
+            URL_SERVICE_PORT=${{ secrets.URL_SERVICE_PORT }}
+            EMAIL_PORT=${{ secrets.EMAIL_PORT }}
+            GMAIL_USER=${{ secrets.GMAIL_USER }}
+            GMAIL_APP_PASSWORD=${{ secrets.GMAIL_APP_PASSWORD }}
+            EOF
+            
             docker compose down
             docker compose up -d --build
