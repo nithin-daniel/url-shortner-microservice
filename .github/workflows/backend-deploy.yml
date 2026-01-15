@@ -22,8 +22,8 @@ jobs:
           port: 22
           script: |
             set -e
-            mkdir -p /srv/your-app
-            cd /srv/your-app
+            mkdir -p /srv/url-shortner
+            cd /srv/url-shortner
 
             if [ ! -d ".git" ]; then
               git clone https://github.com/nithin-daniel/url-shortner-microservice.git .
@@ -32,5 +32,6 @@ jobs:
               git reset --hard origin/master
             fi
 
+            cd server
             docker compose down
             docker compose up -d --build
