@@ -1,5 +1,6 @@
 services:
   # Nginx API Gateway
+  
   nginx:
     image: nginx:alpine
     container_name: nginx-gateway
