@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import Redirect from './pages/Redirect';
 
 function App() {
   const isAuthenticated = () => {
@@ -51,6 +52,8 @@ function App() {
             </AdminRoute>
           }
         />
+        {/* Catch-all route for short URL redirects */}
+        <Route path="/:code" element={<Redirect />} />
       </Routes>
     </Router>
   );
