@@ -131,7 +131,7 @@ const initializeConsumers = async () => {
   await subscribeToEvent('url_events', 'url.created', 'email_service_url_created', async (routingKey, data) => {
     logger.info(`Processing ${routingKey} event for URL: ${data.urlCode}`);
     if (data.userEmail) {
-      await emailService.sendUrlCreatedEmail(data.userEmail, `${process.env.BASE_URL}/${data.urlCode}`, `${data.originalUrl}`);
+      await emailService.sendUrlCreatedEmail(data.userEmail, `${"process.env.BASE_URL"}/${data.urlCode}`, `${data.originalUrl}`);
     }
   });
 
