@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 
+// Helper to construct short URL using current domain
+const getShortUrl = (urlCode) => `${window.location.origin}/${urlCode}`;
+
 const Dashboard = () => {
   const [originalUrl, setOriginalUrl] = useState('');
   const [customCode, setCustomCode] = useState('');
@@ -80,7 +83,8 @@ const Dashboard = () => {
     navigator.clipboard.writeText(text);
   };
 
-  const handleDelete = async (urlCode, shortUrl) => {
+  const handleDelete = async (urlCode) => {
+    const shortUrl = getShortUrl(urlCode);
     const confirmDelete = window.confirm(
       `Are you sure you want to delete this URL?\n\n${shortUrl}\n\nThis action cannot be undone.`
     );
@@ -234,15 +238,15 @@ const Dashboard = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
                         <a
-                          href={url.shortUrl}
+                          href={getShortUrl(url.urlCode)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 font-semibold hover:text-blue-700 truncate"
                         >
-                          {url.shortUrl}
+                          {getShortUrl(url.urlCode)}
                         </a>
                         <button
-                          onClick={() => copyToClipboard(url.shortUrl)}
+                          onClick={() => copyToClipboard(getShortUrl(url.urlCode))}
                           className="text-gray-400 hover:text-gray-600"
                           title="Copy to clipboard"
                         >
@@ -273,7 +277,7 @@ const Dashboard = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => handleDelete(url.urlCode, url.shortUrl)}
+                      onClick={() => handleDelete(url.urlCode)}
                       className="text-red-600 hover:text-red-700 p-2"
                       title="Delete URL"
                     >
