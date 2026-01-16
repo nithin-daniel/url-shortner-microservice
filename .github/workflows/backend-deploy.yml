@@ -47,6 +47,9 @@ jobs:
             ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}
             ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
             ADMIN_NAME=${{ secrets.ADMIN_NAME }}
+            FROM_EMAIL=${{ secrets.FROM_EMAIL }}
+            APP_NAME=${{ secrets.APP_NAME }}
+            BASE_URL=${{ secrets.BASE_URL }}
             EOF
             
             docker compose down
