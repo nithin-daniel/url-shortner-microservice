@@ -15,7 +15,7 @@ const APP_NAME = process.env.APP_NAME;
 const sendEmail = async (to, subject, html, text = '') => {
   try {
     const mailOptions = {
-      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      from: FROM_EMAIL,
       to,
       subject,
       html,
