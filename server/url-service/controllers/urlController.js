@@ -67,7 +67,7 @@ const createShortUrl = async (req, res) => {
     await url.save();
 
     // Generate frontend URL for sharing
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = process.env.BASE_URL;
     const shareableUrl = `${frontendUrl}/${urlCode}`;
 
     // Publish URL creation event
