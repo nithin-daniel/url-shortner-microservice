@@ -331,11 +331,55 @@ const getUserUrlCounts = async (req, res) => {
   }
 };
 
+/**
+ * Resolve URL - Returns JSON with originalUrl (for client-side redirect)
+ */
+const resolveUrl = async (req, res) => {
+  try {
+    const { code } = req.params;
+
+    const url = await Url.findOne({ urlCode: code });
+
+    if (!url) {
+      return errorResponse(res, 404, "URL not found");
+    }
+
+    // Check if URL is soft deleted
+    if (url.deletedAt) {
+      return errorResponse(res, 404, "URL not found");
+    }
+
+    // Check if URL has expired
+    if (url.expiresAt && new Date() > url.expiresAt) {
+      return errorResponse(res, 410, "URL has expired");
+    }
+
+    // Increment click count
+    url.clicks++;
+    await url.save();
+
+    // Publish URL click event
+    await publishEvent('url_events', 'url.clicked', {
+      urlCode: url.urlCode,
+      clicks: url.clicks,
+      timestamp: new Date().toISOString(),
+    });
+
+    return successResponse(res, 200, "URL resolved successfully", {
+      originalUrl: url.originalUrl
+    });
+  } catch (error) {
+    console.error("Error resolving URL:", error);
+    return errorResponse(res, 500, "Server error", { details: error.message });
+  }
+};
+
 module.exports = {
   createShortUrl,
   getAllUrls,
   getUserUrls,
   redirectUrl,
+  resolveUrl,
   getUrlStats,
   deleteUrl,
   getAdminStats,

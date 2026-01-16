@@ -5,6 +5,7 @@ const {
   getAllUrls,
   getUserUrls,
   redirectUrl,
+  resolveUrl,
   getUrlStats,
   deleteUrl,
   getAdminStats,
@@ -32,6 +33,9 @@ router.get('/stats/:code', auth, getUrlStats);
 
 // Delete a URL by code (authenticated users can delete their own, admins can delete any)
 router.delete('/urls/:code', auth, deleteUrl);
+
+// Resolve URL - Returns JSON with originalUrl (public - no auth required)
+router.get('/resolve/:code', resolveUrl);
 
 // Redirect to original URL (public - no auth required)
 router.get('/:code', redirectUrl);
