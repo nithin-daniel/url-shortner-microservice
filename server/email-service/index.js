@@ -29,14 +29,21 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Connect to RabbitMQ and initialize consumers
-connectRabbitMQ().then(() => {
-  initializeConsumers();
-});
+// Initialize RabbitMQ connection and consumers
+const initializeRabbitMQ = async () => {
+  try {
+    await connectRabbitMQ();
+    await initializeConsumers();
+    logger.info('RabbitMQ connection and consumers initialized successfully');
+  } catch (error) {
+    logger.error(`Failed to initialize RabbitMQ: ${error.message}`);
+  }
+};
 
-// Start server
+// Start server and initialize RabbitMQ
 app.listen(PORT, () => {
   logger.info(`Email Service is running on port ${PORT}`);
+  initializeRabbitMQ();
 });
 
 module.exports = app;

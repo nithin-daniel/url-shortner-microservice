@@ -4,31 +4,36 @@ const emailService = require('../services/emailService');
 
 let channel = null;
 
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 const connectRabbitMQ = async () => {
-  try {
-    const connection = await amqp.connect(process.env.RABBITMQ_URL || 'amqp://localhost:5672');
-    channel = await connection.createChannel();
-    
-    // Assert exchanges that we'll be consuming from
-    await channel.assertExchange('user_events', 'topic', { durable: true });
-    await channel.assertExchange('url_events', 'topic', { durable: true });
-    
-    logger.info('RabbitMQ Connected');
-    
-    connection.on('error', (err) => {
-      logger.error(`RabbitMQ connection error: ${err.message}`);
-    });
-    
-    connection.on('close', () => {
-      logger.warn('RabbitMQ connection closed. Reconnecting...');
-      setTimeout(connectRabbitMQ, 5000);
-    });
-    
-    return channel;
-  } catch (error) {
-    logger.error(`Failed to connect to RabbitMQ: ${error.message}`);
-    logger.info('Retrying in 5 seconds...');
-    setTimeout(connectRabbitMQ, 5000);
+  while (true) {
+    try {
+      const connection = await amqp.connect(process.env.RABBITMQ_URL || 'amqp://localhost:5672');
+      channel = await connection.createChannel();
+      
+      // Assert exchanges that we'll be consuming from
+      await channel.assertExchange('user_events', 'topic', { durable: true });
+      await channel.assertExchange('url_events', 'topic', { durable: true });
+      
+      logger.info('RabbitMQ Connected');
+      
+      connection.on('error', (err) => {
+        logger.error(`RabbitMQ connection error: ${err.message}`);
+      });
+      
+      connection.on('close', () => {
+        logger.warn('RabbitMQ connection closed. Reconnecting...');
+        channel = null;
+        connectRabbitMQ();
+      });
+      
+      return channel;
+    } catch (error) {
+      logger.error(`Failed to connect to RabbitMQ: ${error.message}`);
+      logger.info('Retrying in 5 seconds...');
+      await delay(5000);
+    }
   }
 };
 
