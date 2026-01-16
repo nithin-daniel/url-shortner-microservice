@@ -44,7 +44,7 @@ const createShortUrl = async (req, res) => {
     }
 
     // Create short URL
-    const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5002}`;
+    const baseUrl = process.env.BASE_URL;
     const shortUrl = `${baseUrl}/${urlCode}`;
 
     // Set expiry date: use client-provided or default to configured days
