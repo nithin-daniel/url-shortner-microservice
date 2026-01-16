@@ -44,7 +44,18 @@ jobs:
             EMAIL_PORT=${{ secrets.EMAIL_PORT }}
             GMAIL_USER=${{ secrets.GMAIL_USER }}
             GMAIL_APP_PASSWORD=${{ secrets.GMAIL_APP_PASSWORD }}
+            ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}
+            ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
+            ADMIN_NAME=${{ secrets.ADMIN_NAME }}
             EOF
             
             docker compose down
             docker compose up -d --build
+            
+            # Wait for services to be ready
+            echo "Waiting for services to start..."
+            sleep 10
+            
+            # Seed admin user
+            echo "Seeding admin user..."
+            docker exec auth-service node seeders/adminSeeder.js
