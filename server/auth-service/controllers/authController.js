@@ -91,12 +91,14 @@ const login = async (req, res) => {
     // Generate token
     const token = generateToken(user._id, user.role, user.email);
 
-    // Publish user login event
-    await publishEvent('user_events', 'user.logged_in', {
-      userId: user._id.toString(),
-      email: user.email,
-      timestamp: new Date().toISOString(),
-    });
+    // Publish user login event (skip for admin users)
+    if (user.role !== 'admin') {
+      await publishEvent('user_events', 'user.logged_in', {
+        userId: user._id.toString(),
+        email: user.email,
+        timestamp: new Date().toISOString(),
+      });
+    }
 
     return successResponse(res, 200, 'Login successful', {
       user: {
