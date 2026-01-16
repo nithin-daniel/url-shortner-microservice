@@ -2,8 +2,8 @@ const { transporter } = require('../config/email');
 const logger = require('../utils/logger');
 const emailTemplates = require('../templates/emailTemplates');
 
-const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@urlshortener.com';
-const APP_NAME = process.env.APP_NAME || 'URL Shortener';
+const FROM_EMAIL = process.env.FROM_EMAIL;
+const APP_NAME = process.env.APP_NAME;
 
 /**
  * Send an email
