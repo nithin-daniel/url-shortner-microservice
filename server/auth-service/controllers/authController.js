@@ -135,10 +135,14 @@ const getProfile = async (req, res) => {
 
 /**
  * Get all users (admin only)
+ * Optimized: Use lean() for faster read performance
  */
 const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find({ deletedAt: null }).select('-password').sort({ createdAt: -1 });
+    const users = await User.find({ deletedAt: null })
+      .select('-password')
+      .sort({ createdAt: -1 })
+      .lean();
     return successResponse(res, 200, 'Users retrieved successfully', { users, count: users.length });
   } catch (error) {
     console.error('Error fetching users:', error);

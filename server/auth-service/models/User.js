@@ -47,4 +47,8 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
+// Index for faster queries
+userSchema.index({ deletedAt: 1 }); // For soft delete queries
+userSchema.index({ deletedAt: 1, createdAt: -1 }); // Compound index for getAllUsers
+
 module.exports = mongoose.model('User', userSchema);

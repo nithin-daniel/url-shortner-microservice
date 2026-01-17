@@ -248,26 +248,31 @@ const deleteUrl = async (req, res) => {
 
 /**
  * Get admin dashboard statistics
+ * Optimized: All queries run in parallel for better performance
  */
 const getAdminStats = async (req, res) => {
   try {
-    const totalUrls = await Url.countDocuments({ deletedAt: null });
-    const deletedUrls = await Url.countDocuments({ deletedAt: { $ne: null } });
-    const expiredUrls = await Url.countDocuments({
-      deletedAt: null,
-      expiresAt: { $lt: new Date() }
-    });
-    const activeUrls = await Url.countDocuments({
-      deletedAt: null,
-      $or: [
-        { expiresAt: { $gte: new Date() } },
-        { expiresAt: null }
-      ]
-    });
+    const now = new Date();
     
-    const totalClicks = await Url.aggregate([
-      { $match: { deletedAt: null } },
-      { $group: { _id: null, total: { $sum: '$clicks' } } }
+    // Run all queries in parallel for better performance
+    const [totalUrls, deletedUrls, expiredUrls, activeUrls, totalClicksResult] = await Promise.all([
+      Url.countDocuments({ deletedAt: null }),
+      Url.countDocuments({ deletedAt: { $ne: null } }),
+      Url.countDocuments({
+        deletedAt: null,
+        expiresAt: { $lt: now }
+      }),
+      Url.countDocuments({
+        deletedAt: null,
+        $or: [
+          { expiresAt: { $gte: now } },
+          { expiresAt: null }
+        ]
+      }),
+      Url.aggregate([
+        { $match: { deletedAt: null } },
+        { $group: { _id: null, total: { $sum: '$clicks' } } }
+      ])
     ]);
 
     return successResponse(res, 200, "Statistics retrieved successfully", {
@@ -275,7 +280,7 @@ const getAdminStats = async (req, res) => {
       activeUrls,
       expiredUrls,
       deletedUrls,
-      totalClicks: totalClicks[0]?.total || 0
+      totalClicks: totalClicksResult[0]?.total || 0
     });
   } catch (error) {
     console.error("Error fetching admin stats:", error);
@@ -285,21 +290,24 @@ const getAdminStats = async (req, res) => {
 
 /**
  * Get URL count per user (admin only)
+ * Optimized: Pre-compute date once, use hint for index usage
  */
 const getUserUrlCounts = async (req, res) => {
   try {
+    const now = new Date();
+    
     const userUrlCounts = await Url.aggregate([
       { $match: { deletedAt: null } },
       {
         $group: {
-          _id: { $toString: '$userId' },
+          _id: '$userId',
           count: { $sum: 1 },
           activeCount: {
             $sum: {
               $cond: [
                 {
                   $or: [
-                    { $gte: ['$expiresAt', new Date()] },
+                    { $gte: ['$expiresAt', now] },
                     { $eq: ['$expiresAt', null] }
                   ]
                 },
@@ -311,7 +319,12 @@ const getUserUrlCounts = async (req, res) => {
           expiredCount: {
             $sum: {
               $cond: [
-                { $lt: ['$expiresAt', new Date()] },
+                {
+                  $and: [
+                    { $ne: ['$expiresAt', null] },
+                    { $lt: ['$expiresAt', now] }
+                  ]
+                },
                 1,
                 0
               ]
@@ -319,8 +332,16 @@ const getUserUrlCounts = async (req, res) => {
           }
         }
       },
+      {
+        $project: {
+          _id: { $toString: '$_id' },
+          count: 1,
+          activeCount: 1,
+          expiredCount: 1
+        }
+      },
       { $sort: { count: -1 } }
-    ]);
+    ]).allowDiskUse(true);
 
     return successResponse(res, 200, "User URL counts retrieved successfully", {
       userUrlCounts

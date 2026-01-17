@@ -46,5 +46,10 @@ const urlSchema = new mongoose.Schema({
 // Index for faster queries
 urlSchema.index({ createdAt: 1 });
 urlSchema.index({ expiresAt: 1 });
+urlSchema.index({ deletedAt: 1 }); // For soft delete queries
+urlSchema.index({ userId: 1 }); // For user URL counts aggregation
+urlSchema.index({ urlCode: 1 }); // For URL lookups by code
+urlSchema.index({ deletedAt: 1, expiresAt: 1 }); // Compound index for stats queries
+urlSchema.index({ deletedAt: 1, userId: 1 }); // Compound index for user URL counts
 
 module.exports = mongoose.model('Url', urlSchema);
