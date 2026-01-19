@@ -1,3 +1,7 @@
+# Global timezone configuration - change this value to set timezone for all services
+x-timezone: &timezone
+  TZ: ${TZ:-Asia/Kolkata}
+
 services:
   # Nginx API Gateway
   
@@ -5,6 +9,8 @@ services:
     image: nginx:alpine
     container_name: nginx-gateway
     restart: unless-stopped
+    environment:
+      <<: *timezone
     ports:
       - "80:80"
       - "443:443"
@@ -35,6 +41,7 @@ services:
     networks:
       - microservices-network
     environment:
+      <<: *timezone
       MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-url_shortener}
 
   # RabbitMQ Message Broker
@@ -50,6 +57,7 @@ services:
     networks:
       - microservices-network
     environment:
+      <<: *timezone
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-admin}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-admin123}
     healthcheck:
@@ -68,6 +76,7 @@ services:
     expose:
       - "${AUTH_SERVICE_PORT:-5001}"
     environment:
+      <<: *timezone
       PORT: ${AUTH_SERVICE_PORT:-5001}
       MONGODB_URI: mongodb://mongodb:27017/${AUTH_DB_NAME:-auth-service}
       JWT_SECRET: ${JWT_SECRET}
@@ -97,6 +106,7 @@ services:
     expose:
       - "${URL_SERVICE_PORT:-5002}"
     environment:
+      <<: *timezone
       PORT: ${URL_SERVICE_PORT:-5002}
       MONGODB_URI: mongodb://mongodb:27017/${URL_DB_NAME:-url-service}
       JWT_SECRET: ${JWT_SECRET}
@@ -124,6 +134,7 @@ services:
     expose:
       - "${EMAIL_SERVICE_PORT:-5003}"
     environment:
+      <<: *timezone
       PORT: ${EMAIL_SERVICE_PORT:-5003}
       NODE_ENV: ${NODE_ENV:-production}
       RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER:-admin}:${RABBITMQ_DEFAULT_PASS:-admin123}@rabbitmq:5672
