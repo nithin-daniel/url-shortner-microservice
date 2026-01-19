@@ -4,6 +4,8 @@ A production-ready microservices-based URL shortener application with authentica
 
 **Live API:** `https://api-clingo.nithindaniel.tech`
 
+📖 **[API Documentation](./API_DOCS.md)** - Complete API reference with all endpoints, request/response examples, and error codes.
+
 ---
 
 ## 🏗️ Architecture
