@@ -7,6 +7,7 @@ const authRoutes = require('./routes/authRoutes');
 const { successResponse, errorResponse } = require('./utils/responseHandler');
 const logger = require('./utils/logger');
 const requestLogger = require('./middleware/requestLogger');
+const { verifyToken } = require('./utils/jwtUtils');
 
 const app = express();
 const PORT = process.env.AUTH_SERVICE_PORT || 5001;
@@ -24,6 +25,31 @@ connectRabbitMQ().then(() => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
+
+// Auth validation endpoint for nginx (used by auth_request directive)
+app.get('/validate', (req, res) => {
+  try {
+    // Get token from header
+    const authHeader = req.header('Authorization');
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    // Extract and verify token
+    const token = authHeader.replace('Bearer ', '');
+    const decoded = verifyToken(token);
+
+    // Return user info in headers for nginx to forward
+    res.setHeader('X-User-Id', decoded.id);
+    res.setHeader('X-User-Role', decoded.role || 'user');
+    res.setHeader('X-User-Email', decoded.email || '');
+    res.status(200).json({ valid: true, userId: decoded.id, role: decoded.role || 'user', email: decoded.email || '' });
+  } catch (error) {
+    logger.error(`Token validation error: ${error.message}`);
+    return res.status(401).json({ error: 'Invalid token', details: error.message });
+  }
+});
 
 // Routes
 app.get('/', (req, res) => {
