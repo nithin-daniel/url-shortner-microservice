@@ -34,8 +34,8 @@ services:
     image: mongo:7.0
     container_name: mongodb
     restart: unless-stopped
-    ports:
-      - "${MONGODB_PORT:-27017}:27017"
+    # ports:
+    #   - "${MONGODB_PORT:-27017}:27017"
     volumes:
       - mongodb_data:/data/db
     networks:
